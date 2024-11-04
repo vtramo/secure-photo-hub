@@ -1,0 +1,20 @@
+[package]
+name = "rust-oauth2-openid-keycloak"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jsonwebtoken = "9.3.0"
+openssl = { version = "0.10.68"}
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0.214", features = ["derive"] }
+actix-web = "4.9.0"
+actix-session = { version = "0.10.1", features = ["redis-session"] }
+anyhow = "1.0.92"
+log = "0.4.22"
+env_logger = "0.11.5"
+base64 = "0.22.1"
+ring = "0.17.8"
+serde_json = "1.0.132"
+http = "1.1.0"
+yaml-rust2 = "0.9.0"
