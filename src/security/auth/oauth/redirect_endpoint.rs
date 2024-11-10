@@ -67,7 +67,7 @@ pub async fn oidc_redirect_endpoint(
             Some(&nonce),
         );
 
-        match authorization_check(&session_tokens).await {
+        match authorization_check(&session_tokens, oidc_config.jwks(), oidc_config.client_id()).await {
             None => {},
 
             Some(validated_tokens) => {

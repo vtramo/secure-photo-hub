@@ -1,11 +1,15 @@
-use jsonwebtoken::TokenData;
+use jsonwebtoken::{Algorithm, decode_header, DecodingKey, TokenData, Validation};
+use jsonwebtoken::errors::ErrorKind;
+use jsonwebtoken::jwk::{Jwk, JwkSet};
+use log::log;
+use serde::Deserialize;
 use serde_json::Value;
+
 use crate::security::auth::oauth::{OAuthAuthorizationResponse, OAuthSessionTokens};
-use crate::security::jwks::{IdTokenClaims, TokenValidationError, validate_access_token, validate_id_token};
+use crate::security::auth::oauth::claims::IdTokenClaims;
 
 #[derive(Debug)]
 pub struct OAuthValidatedTokens {
-    tokens_refreshed: bool,
     access_token: String,
     refresh_token: String,
     id_token: String,
@@ -14,10 +18,6 @@ pub struct OAuthValidatedTokens {
 }
 
 impl OAuthValidatedTokens {
-    pub fn is_tokens_refreshed(&self) -> bool {
-        self.tokens_refreshed
-    }
-
     pub fn access_token(&self) -> &str {
         &self.access_token
     }
@@ -51,15 +51,25 @@ impl OAuthValidatedTokens {
     }
 }
 
-pub async fn authorization_check(session_token: &OAuthSessionTokens) -> Option<OAuthValidatedTokens> {
+pub enum TokenValidationError {
+    ExpiredSignature,
+    Unknown,
+}
+
+pub async fn authorization_check(
+    session_token: &OAuthSessionTokens, 
+    jwks: &JwkSet, 
+    client_id: &str
+) -> Option<OAuthValidatedTokens> {
+    log::info!("Authorization Check");
+
     let access_token = session_token.access_token.clone();
     let refresh_token = session_token.refresh_token.clone();
     let id_token = session_token.id_token.clone();
     let nonce = session_token.nonce.clone();
 
-    match validate_tokens(&access_token, &id_token, nonce).await {
+    match validate_tokens(&access_token, &id_token, nonce, jwks, client_id).await {
         Ok((access_token_claims, id_token_claims)) => Some(OAuthValidatedTokens {
-            tokens_refreshed: false,
             access_token,
             refresh_token,
             id_token,
@@ -69,18 +79,7 @@ pub async fn authorization_check(session_token: &OAuthSessionTokens) -> Option<O
 
         Err(TokenValidationError::ExpiredSignature) => {
             log::warn!("Expired tokens");
-
-            refresh_token_endpoint(&refresh_token).await
-                .and_then(|(new_access_token, new_refresh_token, new_id_token, new_access_token_claims, new_id_token_claims)| {
-                    Some(OAuthValidatedTokens {
-                        tokens_refreshed: true,
-                        access_token: new_access_token,
-                        refresh_token: new_refresh_token,
-                        id_token: new_id_token,
-                        access_token_claims: new_access_token_claims,
-                        id_token_claims: new_id_token_claims,
-                    })
-                })
+            None
         },
 
         _ => None,
@@ -90,38 +89,96 @@ pub async fn authorization_check(session_token: &OAuthSessionTokens) -> Option<O
 async fn validate_tokens(
     access_token: &str,
     id_token: &str,
-    nonce: Option<String>
+    nonce: Option<String>,
+    jwks: &JwkSet,
+    client_id: &str,
 ) -> Result<(TokenData<Value>, IdTokenClaims), TokenValidationError> {
-    let id_token_claims = validate_id_token(&id_token, nonce).await?;
-    let access_token_claims = validate_access_token(&access_token).await?;
+    let id_token_claims = validate_id_token(&id_token, nonce, jwks, client_id).await?;
+    let access_token_claims = validate_access_token(&access_token, jwks).await?;
     Ok((access_token_claims, id_token_claims))
 }
 
-async fn refresh_token_endpoint(refresh_token: &str) -> Option<(String, String, String, TokenData<Value>, IdTokenClaims)> {
-    let params = [
-        ("grant_type", "refresh_token"),
-        ("refresh_token", refresh_token),
-        ("client_id", "fast-photo-hub-rest-api"),
-        ("client_secret", "ERMXusbPy62B1JiEGwT7bKMcal8mrwId"),
-        ("scope", "openid profile email offline_access"),
-    ];
+pub async fn validate_access_token(
+    access_token: &str,
+    jwks: &JwkSet,
+) -> Result<TokenData<Value>, TokenValidationError> {
+    let (decoding_key, alg) = extract_decoding_key(access_token, jwks)?;
+    let mut validation = Validation::new(alg);
+    validation.set_audience(&["account"]);
 
-    let client = reqwest::Client::new();
-    let authorization_response = client
-        .post("http://localhost:8080/realms/fast-photo-hub/protocol/openid-connect/token")
-        .form(&params)
-        .send()
-        .await
-        .ok()?
-        .json::<OAuthAuthorizationResponse>()
-        .await
-        .ok()?;
+    match jsonwebtoken::decode::<Value>(access_token, &decoding_key, &validation) {
+        Ok(token_data) =>Ok(token_data),
+        Err(err) => {
+            log::error!("Error validating access token: {:?}", err);
+            match err.kind() {
+                ErrorKind::ExpiredSignature => Err(TokenValidationError::ExpiredSignature),
+                _ => Err(TokenValidationError::Unknown)
+            }
+        }
+    }
+}
 
-    validate_tokens(&authorization_response.access_token, &authorization_response.id_token, None).await
-        .map(|(access_token_claims, id_token_claims)|
-            (authorization_response.access_token,
-             authorization_response.refresh_token,
-             authorization_response.id_token,
-             access_token_claims,
-             id_token_claims)).ok()
+pub async fn validate_id_token(
+    id_token: &str,
+    nonce: Option<String>,
+    jwks: &JwkSet,
+    client_id: &str,
+) -> Result<IdTokenClaims, TokenValidationError> {
+    let (decoding_key, alg) = extract_decoding_key(id_token, jwks)?;
+    let mut validation = Validation::new(alg);
+    validation.set_audience(&[client_id]);
+
+    match jsonwebtoken::decode::<IdTokenClaims>(id_token, &decoding_key, &validation) {
+        Ok(token_data) => {
+            let id_token_claims = token_data.claims;
+
+            if let Some(id_token_nonce) = id_token_claims.nonce().clone() {
+                if let Some(nonce) = nonce {
+                    if id_token_nonce != nonce {
+                        log::warn!("Nonce mismatch: expected {}, found {}", nonce, id_token_nonce);
+                        return Err(TokenValidationError::Unknown);
+                    }
+                }
+            }
+
+            Ok(id_token_claims)
+        },
+
+        Err(err) => {
+            match err.kind() {
+                ErrorKind::ExpiredSignature => {
+                    log::warn!("ID token has expired: {}", err);
+                    Err(TokenValidationError::ExpiredSignature)
+                },
+                _ => {
+                    log::warn!("ID token validation failed: {}", err);
+                    Err(TokenValidationError::Unknown)
+                }
+            }
+        }
+    }
+}
+
+fn extract_decoding_key(token: &str, jwks: &JwkSet) -> Result<(DecodingKey, Algorithm), TokenValidationError> {
+    let header = decode_header(token).map_err(|err| {
+        log::warn!("Failed to decode token header: {}", err);
+        TokenValidationError::Unknown
+    })?;
+
+    let kid = header.kid.ok_or_else(|| {
+        log::warn!("No 'kid' found in the token header.");
+        TokenValidationError::Unknown
+    })?;
+
+    let jwk = jwks.find(&kid).ok_or_else(|| {
+        log::warn!("No JWK found for the 'kid': {}", kid);
+        TokenValidationError::Unknown
+    })?;
+
+    let decoding_key = DecodingKey::from_jwk(jwk).map_err(|err| {
+        log::warn!("Failed to create DecodingKey from JWK: {}", err);
+        TokenValidationError::Unknown
+    })?;
+
+    Ok((decoding_key, header.alg))
 }

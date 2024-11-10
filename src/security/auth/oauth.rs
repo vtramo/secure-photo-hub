@@ -2,12 +2,17 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 
 pub use authorization_request::{OAuthAuthorizationRequestState, OAuthResponseType, OAuthSecureAuthorizationRequest};
+pub use refresh_token_request::{OAuthRefreshTokenRequest};
 pub use token_validator::{authorization_check, OAuthValidatedTokens};
 pub use redirect_endpoint::{oidc_redirect_endpoint};
+pub use claims::IdTokenClaims;
+
 mod authorization_request;
 mod token_validator;
 mod redirect_endpoint;
 mod access_token_request;
+mod refresh_token_request;
+mod claims;
 
 
 pub const OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY: &'static str = "oauth_authorization_request_state";

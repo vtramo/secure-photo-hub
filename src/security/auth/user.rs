@@ -1,12 +1,14 @@
 use std::future::Future;
 use std::pin::Pin;
+
 use actix_session::SessionExt;
 use actix_web::{FromRequest, HttpRequest};
 use actix_web::dev::Payload;
 use actix_web::error::ErrorUnauthorized;
 use serde::{Deserialize, Serialize};
+
+use crate::security::auth::oauth::IdTokenClaims;
 use crate::security::auth::USER_SESSION_KEY;
-use crate::security::jwks::IdTokenClaims;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
