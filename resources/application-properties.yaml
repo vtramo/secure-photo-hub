@@ -1,6 +1,6 @@
 oidc:
   auth-server.url: http://localhost:8080/realms/fast-photo-hub
-  client-id: fast-photo-hub
+  client-id: fast-photo-hub-rest-api
   client-secret: ERMXusbPy62B1JiEGwT7bKMcal8mrwId
   scopes: openid profile email offline_access
   redirect-uri: http://localhost:8085/openid_redirect_uri_endpoint
