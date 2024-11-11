@@ -17,7 +17,8 @@ pub async fn init_http_server(config: Config) -> anyhow::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .wrap(from_fn(security::auth::middleware::authentication_middleware))
+            .wrap(from_fn(security::auth::middleware::authentication_middleware_oauth2_cookie))
+            .wrap(from_fn(security::auth::middleware::authentication_middleware_bearer_token))
             .wrap(SessionMiddleware::builder(store.clone(), Key::from(&[0; 64]))
                 .cookie_http_only(true)
                 .cookie_secure(false)

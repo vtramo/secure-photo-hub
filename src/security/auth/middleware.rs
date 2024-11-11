@@ -1,21 +1,72 @@
+use std::rc::Rc;
 use actix_session::SessionExt;
-use actix_web::{Error, HttpResponse, Responder, web};
+use actix_web::{Error, HttpMessage, HttpResponse, Responder, web};
 use actix_web::body::{BoxBody, EitherBody, MessageBody};
-use actix_web::dev::{ServiceRequest, ServiceResponse};
+use actix_web::dev::{Extensions, ServiceRequest, ServiceResponse};
 use actix_web::middleware::Next;
+use jsonwebtoken::TokenData;
 use reqwest::Url;
+use serde_json::Value;
 
-use crate::security::auth::oauth::{authorization_check, OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY, OAUTH_SESSION_KEY, OAuthRefreshTokenRequest, OAuthSecureAuthorizationRequest, OAuthSession, OAuthSessionTokens};
+use crate::security::auth::oauth::{authorization_check, OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY, OAUTH_SESSION_KEY, OAuthRefreshTokenRequest, OAuthSecureAuthorizationRequest, OAuthSession, OAuthSessionTokens, UserInfoEndpoint, validate_access_token};
 use crate::security::auth::user::User;
 use crate::security::auth::USER_SESSION_KEY;
-use crate::setup::Config;
+use crate::setup::{Config, OidcConfig};
 
-pub async fn authentication_middleware(
+pub enum AuthenticationMethod {
+    Bearer,
+    OAuthCodeFlow,
+}
+
+pub async fn authentication_middleware_bearer_token(
+    mut req: ServiceRequest,
+    next: Next<impl MessageBody>,
+) -> Result<ServiceResponse<EitherBody<BoxBody, impl MessageBody>>, Error> {
+    let oidc_config = get_oidc_config(&req)?;
+
+    if let Some(ref access_token) = extract_bearer_token(&req) {
+        match validate_access_token(&access_token, oidc_config.jwks()).await {
+            Ok(_) => {
+                let user_info_endpoint = UserInfoEndpoint::new(oidc_config.userinfo_endpoint(), access_token);
+                match user_info_endpoint.fetch_user_info().await {
+                    Ok(user_info_response) => {
+                        let user = User::from(user_info_response);
+                        req.get_session().clear();
+                        req.extensions_mut().insert(user);
+                        req.extensions_mut().insert(AuthenticationMethod::Bearer);
+
+                        Ok(next.call(req).await?.map_into_right_body())
+                    },
+                    Err(_) => {
+                        log::error!("Failed to fetch user info from the UserInfo endpoint");
+                        Ok(req.into_response(unauthorized()).map_into_left_body())
+                    }
+                }
+            },
+            Err(_) => { Ok(req.into_response(unauthorized()).map_into_left_body()) }
+        }
+    } else {
+        Ok(next.call(req).await?.map_into_right_body())
+    }
+}
+
+fn extract_bearer_token(req: &ServiceRequest) -> Option<String> {
+    req.headers()
+        .get("Authorization")
+        .and_then(|header| header.to_str().ok())
+        .and_then(|auth| auth.strip_prefix("Bearer "))
+        .map(|token| token.to_string())
+}
+
+pub async fn authentication_middleware_oauth2_cookie(
     req: ServiceRequest,
     next: Next<impl MessageBody>,
 ) -> Result<ServiceResponse<EitherBody<BoxBody, impl MessageBody>>, Error> {
-    let config = req.app_data::<web::Data<Config>>().expect("Failed to retrieve configuration from app data");
-    let oidc_config = config.oidc_config();
+    if is_authenticated(&req) {
+        return Ok(next.call(req).await?.map_into_right_body());
+    }
+
+    let oidc_config = get_oidc_config(&req)?;
     let oidc_redirect_uri_path = oidc_config.redirect_uri().path();
 
     let session = req.get_session();
@@ -74,6 +125,7 @@ pub async fn authentication_middleware(
                 }
             }
 
+            req.extensions_mut().insert(AuthenticationMethod::OAuthCodeFlow);
             Ok(next.call(req).await?.map_into_right_body())
         }
 
@@ -85,4 +137,17 @@ fn unauthorized() -> HttpResponse {
     HttpResponse::Unauthorized()
         .finish()
         .map_into_boxed_body()
+}
+
+fn get_oidc_config(req: &ServiceRequest) -> Result<&OidcConfig, Error> {
+    req.app_data::<web::Data<Config>>()
+        .map(|config| config.oidc_config())
+        .ok_or_else(move || {
+            log::error!("Failed to retrieve configuration from app data");
+            actix_web::error::ErrorInternalServerError("Configuration missing")
+        })
+}
+
+fn is_authenticated(req: &ServiceRequest) -> bool {
+    req.extensions_mut().get::<AuthenticationMethod>().is_some()
 }

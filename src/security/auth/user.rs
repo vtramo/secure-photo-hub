@@ -2,12 +2,13 @@ use std::future::Future;
 use std::pin::Pin;
 
 use actix_session::SessionExt;
-use actix_web::{FromRequest, HttpRequest};
+use actix_web::{FromRequest, HttpMessage, HttpRequest};
 use actix_web::dev::Payload;
 use actix_web::error::ErrorUnauthorized;
 use serde::{Deserialize, Serialize};
+use crate::security::auth::middleware::AuthenticationMethod;
 
-use crate::security::auth::oauth::IdTokenClaims;
+use crate::security::auth::oauth::{IdTokenClaims, UserInfoResponse};
 use crate::security::auth::USER_SESSION_KEY;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,23 +42,43 @@ impl From<&IdTokenClaims> for User {
     }
 }
 
+impl From<UserInfoResponse> for User {
+    fn from(value: UserInfoResponse) -> Self {
+        Self {
+            id: value.sub().to_string(),
+            username: value.preferred_username().to_string(),
+            given_name: value.given_name().to_string(),
+            family_name: value.family_name().to_string(),
+            full_name: value.name().to_string(),
+            email: value.email().to_string(),
+            email_verified: value.email_verified(),
+        }
+    }
+}
+
+
 impl FromRequest for User {
     type Error = actix_web::Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
-        let session = req.get_session();
-
+        let authenticated_user = get_authenticated_user(&req);
         Box::pin(async move {
-            match session
-                .get::<User>(USER_SESSION_KEY)
-                .unwrap_or(None)
-            {
-                Some(user) => { Ok(user) },
-                None => {
-                    Err(ErrorUnauthorized("Unauthorized: No session tokens found"))
-                }
-            }
+            authenticated_user.ok_or(ErrorUnauthorized("Unauthorized: No session tokens found"))
         })
+    }
+}
+
+fn get_authenticated_user(req: &HttpRequest) -> Option<User> {
+    let session = req.get_session();
+    let mut extensions = req.extensions_mut();
+    let authentication_method = extensions.get::<AuthenticationMethod>()?;
+    match authentication_method {
+        AuthenticationMethod::OAuthCodeFlow => {
+            session.get::<User>(USER_SESSION_KEY).ok()?
+        },
+        AuthenticationMethod::Bearer => {
+            extensions.remove::<User>()
+        }
     }
 }

@@ -107,7 +107,7 @@ pub async fn validate_access_token(
     validation.set_audience(&["account"]);
 
     match jsonwebtoken::decode::<Value>(access_token, &decoding_key, &validation) {
-        Ok(token_data) =>Ok(token_data),
+        Ok(token_data) => Ok(token_data),
         Err(err) => {
             log::error!("Error validating access token: {:?}", err);
             match err.kind() {

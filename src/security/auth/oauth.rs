@@ -3,8 +3,9 @@ use serde::{Deserialize, Serialize};
 
 pub use authorization_request::{OAuthAuthorizationRequestState, OAuthResponseType, OAuthSecureAuthorizationRequest};
 pub use refresh_token_request::{OAuthRefreshTokenRequest};
-pub use token_validator::{authorization_check, OAuthValidatedTokens};
+pub use token_validator::{authorization_check, OAuthValidatedTokens, validate_access_token, validate_id_token};
 pub use redirect_endpoint::{oidc_redirect_endpoint};
+pub use user_info_request::{UserInfoResponse, UserInfoEndpoint};
 pub use claims::IdTokenClaims;
 
 mod authorization_request;
@@ -13,6 +14,7 @@ mod redirect_endpoint;
 mod access_token_request;
 mod refresh_token_request;
 mod claims;
+mod user_info_request;
 
 
 pub const OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY: &'static str = "oauth_authorization_request_state";
