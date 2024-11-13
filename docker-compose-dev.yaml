@@ -1,0 +1,66 @@
+services:
+  fast-photo-hub:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    ports:
+      - 8085:8085
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - OIDC_AUTH_SERVER_URL=http://keycloak:8080/realms/fast-photo-hub
+      - OIDC_CLIENT_ID=fast-photo-hub-rest-api
+      - OIDC_CLIENT_SECRET=ERMXusbPy62B1JiEGwT7bKMcal8mrwId
+      - OIDC_SCOPES=openid profile email offline_access
+      - OIDC_REDIRECT_URI=http://fast-photo-hub:8085/openid_redirect_uri_endpoint
+      - REDIS_HOST=redis://redis:6379
+
+  redis:
+    image: redis
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+    expose:
+      - 6379
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.5
+    depends_on:
+      - postgres
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/fast_photo_hub_db
+      - KC_DB=postgres
+      - KC_DB_USERNAME=user
+      - KC_DB_PASSWORD=password
+      - KC_LOG_LEVEL=info
+      - KC_HEALTH_ENABLED=true
+    volumes:
+      - ./keycloak/policies/jar/only-resource-owner-policy.jar:/opt/keycloak/providers/only-resource-owner-policy.jar
+      - ./keycloak/import/fast-photo-hub-realm.json:/opt/keycloak/data/import/fast-photo-hub-realm.json
+    command: ["start-dev", "--import-realm", "--verbose"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'exec 3<>/dev/tcp/localhost/8080; echo -e "GET /health/ready HTTP/1.1\nhost: localhost:8080\n" >&3; timeout --preserve-status 1 cat <&3 | grep -m 1 status | grep -m 1 UP; ERROR=$?; exec 3<&-; exec 3>&-; exit $ERROR'
+        ]
+    ports:
+      - 8080:8080
+
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=fast_photo_hub_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+volumes:
+  postgres-data:
