@@ -3,6 +3,14 @@ name = "rust-oauth2-openid-keycloak"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
+panic = "abort"
+strip = "debuginfo"
+
+
 [dependencies]
 jsonwebtoken = "9.3.0"
 openssl = { version = "0.10.68"}
