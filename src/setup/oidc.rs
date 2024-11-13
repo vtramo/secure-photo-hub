@@ -1,10 +1,12 @@
+use std::env;
 use std::ops::Deref;
 
 use anyhow::Context;
 use jsonwebtoken::jwk::JwkSet;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use yaml_rust2::{Yaml};
+use yaml_rust2::Yaml;
+use yaml_rust2::yaml::Hash;
 
 use crate::setup::utils;
 
@@ -14,6 +16,12 @@ const AUTH_SERVER_URL_FIELD: &'static str = "auth-server.url";
 const OIDC_FIELD: &'static str = "oidc";
 const REDIRECT_URI_FIELD: &'static str = "redirect-uri";
 const SCOPES_FIELD: &'static str = "scopes";
+
+const OIDC_CLIENT_ID_ENV_VAR: &str = "OIDC_CLIENT_ID";
+const OIDC_SCOPES_ENV_VAR: &str = "OIDC_SCOPES";
+const OIDC_REDIRECT_URI_ENV_VAR: &str = "OIDC_REDIRECT_URI";
+const OIDC_CLIENT_SECRET_ENV_VAR: &str = "OIDC_CLIENT_SECRET";
+const OIDC_AUTH_SERVER_URL_ENV_VAR: &str = "OIDC_AUTH_SERVER_URL";
 
 #[derive(Debug, Clone)]
 pub struct OidcConfig {
@@ -149,42 +157,63 @@ async fn fetch_jwks(jwks_url: &Url) -> anyhow::Result<JwkSet> {
 }
 
 fn extract_client_id(root: &Yaml) -> anyhow::Result<String> {
-    Ok(root[CLIENT_ID_FIELD]
-        .as_str()
-        .context("Missing or invalid 'client-id' field in oidc configuration")?
-        .to_string())
+    env::var(OIDC_CLIENT_ID_ENV_VAR)
+        .context("Environment variable OIDC_CLIENT_ID is not set or is empty")
+        .or_else(|_| {
+            root[CLIENT_ID_FIELD]
+                .as_str()
+                .context("Missing or invalid 'client-id' field in OIDC configuration and 'OIDC_CLIENT_ID' environment variable is not set.")
+                .map(|id| id.to_string())
+        })
 }
 
 fn extract_scopes(root: &Yaml) -> anyhow::Result<Vec<String>> {
-    Ok(root[SCOPES_FIELD]
-        .as_str()
-        .context("Missing or invalid 'scopes' field in oidc configuration")?
-        .to_string()
-        .split(" ")
-        .map(str::to_string)
-        .collect())
+    env::var(OIDC_SCOPES_ENV_VAR)
+        .context("Environment variable OIDC_SCOPES is not set or is empty")
+        .map(|scopes| scopes.split_whitespace().map(str::to_string).collect())
+        .or_else(|_| {
+            root[SCOPES_FIELD]
+                .as_str()
+                .context("Missing or invalid 'scopes' field in OIDC configuration and 'OIDC_SCOPES' environment variable is not set.")
+                .map(|scopes| scopes.split_whitespace().map(str::to_string).collect())
+        })
 }
 
 fn extract_redirect_uri(root: &Yaml) -> anyhow::Result<Url> {
-    Ok(Url::parse(
-        root[REDIRECT_URI_FIELD].as_str()
-            .context("Missing or invalid 'redirect-uri' field in oidc configuration")?
-    )?)
+    env::var(OIDC_REDIRECT_URI_ENV_VAR)
+        .context("Environment variable OIDC_REDIRECT_URI is not set or is empty")
+        .and_then(|uri| Url::parse(&uri).context("Failed to parse OIDC_REDIRECT_URI environment variable as URL"))
+        .or_else(|_| {
+            root[REDIRECT_URI_FIELD]
+                .as_str()
+                .context("Missing or invalid 'redirect-uri' field in OIDC configuration and 'OIDC_REDIRECT_URI' environment variable is not set.")
+                .and_then(|uri_str| Url::parse(uri_str).context("Failed to parse 'redirect-uri' field as URL"))
+        })
 }
 
 fn extract_client_secret(root: &Yaml) -> anyhow::Result<String> {
-    Ok(root[CLIENT_SECRET_FIELD]
-        .as_str()
-        .context("Missing or invalid 'client-secret' field in oidc configuration")?
-        .to_string())
+    env::var(OIDC_CLIENT_SECRET_ENV_VAR)
+        .context("Environment variable OIDC_CLIENT_SECRET is not set or is empty")
+        .or_else(|_| {
+            root[CLIENT_SECRET_FIELD]
+                .as_str()
+                .context("Missing or invalid 'client-secret' field in OIDC configuration and 'OIDC_CLIENT_SECRET' environment variable is not set.")
+                .map(|secret| secret.to_string())
+        })
 }
 
-fn extract_auth_server_url(root: &Yaml) -> anyhow::Result<reqwest::Url> {
-    Ok(Url::parse(
-        root[AUTH_SERVER_URL_FIELD].as_str()
-            .context("Missing or invalid 'auth-server.url' field in oidc configuration")?
-    )?)
+fn extract_auth_server_url(root: &Yaml) -> anyhow::Result<Url> {
+    env::var(OIDC_AUTH_SERVER_URL_ENV_VAR)
+        .context("Environment variable OIDC_AUTH_SERVER_URL is not set or is empty")
+        .and_then(|url| Url::parse(&url).context("Failed to parse OIDC_AUTH_SERVER_URL environment variable as URL"))
+        .or_else(|_| {
+            root[AUTH_SERVER_URL_FIELD]
+                .as_str()
+                .context("Missing or invalid 'auth-server.url' field in OIDC configuration and 'OIDC_AUTH_SERVER_URL' environment variable is not set.")
+                .and_then(|url_str| Url::parse(url_str).context("Failed to parse 'auth-server.url' field as URL"))
+        })
 }
+
 
 fn build_well_known_openid_config_url(auth_server_url: &Url) -> anyhow::Result<reqwest::Url> {
     let well_known_url = format!("{}/.well-known/openid-configuration", auth_server_url);

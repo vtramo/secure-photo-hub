@@ -1,11 +1,9 @@
 use jsonwebtoken::{Algorithm, decode_header, DecodingKey, TokenData, Validation};
 use jsonwebtoken::errors::ErrorKind;
-use jsonwebtoken::jwk::{Jwk, JwkSet};
-use log::log;
-use serde::Deserialize;
+use jsonwebtoken::jwk::{JwkSet};
 use serde_json::Value;
 
-use crate::security::auth::oauth::{OAuthAuthorizationResponse, OAuthSessionTokens};
+use crate::security::auth::oauth::{OAuthSessionTokens};
 use crate::security::auth::oauth::claims::IdTokenClaims;
 
 #[derive(Debug)]

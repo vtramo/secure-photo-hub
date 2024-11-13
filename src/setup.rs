@@ -32,8 +32,7 @@ impl Config {
 }
 
 pub async fn setup() -> anyhow::Result<Config> {
-    let application_properties = read_to_string(APPLICATION_PROPERTIES)
-        .with_context(|| format!("Failed to read file: {}", APPLICATION_PROPERTIES))?;
+    let application_properties = read_to_string(APPLICATION_PROPERTIES).unwrap_or("x:|".to_string());
 
     let root = YamlLoader::load_from_str(&application_properties)
         .context("Failed to parse YAML from application properties")?

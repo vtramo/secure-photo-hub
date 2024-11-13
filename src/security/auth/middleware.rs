@@ -1,12 +1,9 @@
-use std::rc::Rc;
 use actix_session::SessionExt;
-use actix_web::{Error, HttpMessage, HttpResponse, Responder, web};
+use actix_web::{Error, HttpMessage, HttpResponse, web};
 use actix_web::body::{BoxBody, EitherBody, MessageBody};
-use actix_web::dev::{Extensions, ServiceRequest, ServiceResponse};
+use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::middleware::Next;
-use jsonwebtoken::TokenData;
 use reqwest::Url;
-use serde_json::Value;
 
 use crate::security::auth::oauth::{authorization_check, OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY, OAUTH_SESSION_KEY, OAuthRefreshTokenRequest, OAuthSecureAuthorizationRequest, OAuthSession, OAuthSessionTokens, UserInfoEndpoint, validate_access_token};
 use crate::security::auth::user::User;
@@ -19,7 +16,7 @@ pub enum AuthenticationMethod {
 }
 
 pub async fn authentication_middleware_bearer_token(
-    mut req: ServiceRequest,
+    req: ServiceRequest,
     next: Next<impl MessageBody>,
 ) -> Result<ServiceResponse<EitherBody<BoxBody, impl MessageBody>>, Error> {
     let oidc_config = get_oidc_config(&req)?;
