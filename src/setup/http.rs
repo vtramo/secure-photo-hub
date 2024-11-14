@@ -4,6 +4,7 @@ use actix_session::storage::RedisSessionStore;
 use actix_web::{App, HttpServer, web};
 use actix_web::cookie::{Key, SameSite};
 use actix_web::middleware::{from_fn, Logger};
+use anyhow::Context;
 
 use crate::{controller, security};
 use crate::setup::Config;
@@ -12,7 +13,9 @@ pub async fn init_http_server(config: Config) -> anyhow::Result<()> {
     log::info!("Init http server...");
 
     let redis_connection_string = config.redis_config.connection_string();
-    let store = RedisSessionStore::new(redis_connection_string.to_string()).await?;
+    let store = RedisSessionStore::new(redis_connection_string.to_string())
+        .await
+        .context("Failed to connect to Redis for session management")?;
     let oauth_redirect_uri_path = config.oidc_config().redirect_uri().path().to_string();
 
     HttpServer::new(move || {
