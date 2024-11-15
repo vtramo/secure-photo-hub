@@ -22,8 +22,8 @@ services:
     image: redis
     healthcheck:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
-    expose:
-      - 6379
+    ports:
+      - 6379:6379
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0.5
