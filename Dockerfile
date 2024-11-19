@@ -18,5 +18,7 @@ RUN mv ./target/release/fast-photo-hub ./app
 
 FROM debian:stable-slim AS runtime
 WORKDIR /app
+ENV CONFIG_LOCATION=/config/application-properties.yaml
+ENV VAULT_SECRETS_LOCATION=/config/vault-secrets.yaml
 COPY --from=builder /app/app /usr/local/bin/
 ENTRYPOINT ["/usr/local/bin/app"]

@@ -1,4 +1,7 @@
+use std::env;
 use std::fs::read_to_string;
+use std::path::Path;
+use std::sync::LazyLock;
 
 use anyhow::Context;
 use yaml_rust2::{Yaml, YamlLoader};
@@ -13,8 +16,10 @@ mod oidc;
 mod redis;
 mod utils;
 
-const APPLICATION_PROPERTIES: &str = "resources/application-properties.yaml";
-const VAULT_SECRETS: &str = "resources/vault-secrets.yaml";
+const CONFIG_LOCATION_ENV_VAR: &'static str = "CONFIG_LOCATION";
+const VAULT_SECRETS_LOCATION_ENV_VAR: &'static str = "VAULT_SECRETS_LOCATION";
+const APPLICATION_PROPERTIES: LazyLock<&Path> = LazyLock::new(|| Path::new("resources/application-properties.yaml"));
+const VAULT_SECRETS: LazyLock<&Path> = LazyLock::new(|| Path::new("resources/vault-secrets.yaml"));
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -33,8 +38,8 @@ impl Config {
 }
 
 pub async fn setup() -> anyhow::Result<Config> {
-    let application_properties = read_to_string(APPLICATION_PROPERTIES).unwrap_or("x:|".to_string());
-    let secrets = read_to_string(VAULT_SECRETS).unwrap_or("x:|".to_string());
+    let application_properties = read_to_string(get_application_properties_path()).unwrap_or("x:|".to_string());
+    let secrets = read_to_string(get_vault_secrets_path()).unwrap_or("x:|".to_string());
 
     let root_application_properties = YamlLoader::load_from_str(&application_properties)
         .context("Failed to parse YAML from application properties")?
@@ -55,4 +60,20 @@ pub async fn setup() -> anyhow::Result<Config> {
         oidc_config,
         redis_config,
     })
+}
+
+fn get_application_properties_path() -> String {
+    env::var(CONFIG_LOCATION_ENV_VAR)
+        .unwrap_or(APPLICATION_PROPERTIES
+            .to_str()
+            .unwrap()
+            .to_string())
+}
+
+fn get_vault_secrets_path() -> String {
+    env::var(VAULT_SECRETS_LOCATION_ENV_VAR)
+        .unwrap_or(VAULT_SECRETS
+            .to_str()
+            .unwrap()
+            .to_string())
 }
