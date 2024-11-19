@@ -1,0 +1,37 @@
+apiVersion: v1
+data:
+  vault-agent-config.hcl: |
+    exit_after_auth = true
+
+    pid_file = "/home/vault/pidfile"
+
+    auto_auth {
+        method "kubernetes" {
+            mount_path = "auth/kubernetes"
+            config = {
+                role = "fast-photo-hub-keycloak-role"
+            }
+        }
+
+        sink "file" {
+            config = {
+                path = "/home/vault/.vault-token"
+            }
+        }
+    }
+
+    template {
+    destination = "/etc/secrets/secrets.txt"
+    contents = <<EOT
+    {{- with secret "fast-photo-hub/data/keycloak" }}
+    export CLIENT_ID="{{ .Data.data.clientId }}"
+    CLIENT_ID="{{ .Data.data.clientId }}"
+    {{ end }}
+    EOT
+    }
+
+
+kind: ConfigMap
+metadata:
+  name: example-vault-agent-config
+  namespace: default
