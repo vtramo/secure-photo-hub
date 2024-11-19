@@ -1,4 +1,4 @@
-use rust_oauth2_openid_keycloak::setup;
+use fast_photo_hub::setup;
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {

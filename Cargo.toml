@@ -1,7 +1,8 @@
 [package]
-name = "rust-oauth2-openid-keycloak"
+name = "fast-photo-hub"
 version = "0.1.0"
 edition = "2021"
+authors = ["Vincenzo Tramo <vv.tramo@gmail.com>"]
 
 [profile.release]
 codegen-units = 1

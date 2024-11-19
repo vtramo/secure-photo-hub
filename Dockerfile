@@ -14,7 +14,7 @@ COPY ./Cargo.toml ./Cargo.lock ./
 COPY ./src ./src
 
 RUN cargo build --release
-RUN mv ./target/release/rust-oauth2-openid-keycloak ./app
+RUN mv ./target/release/fast-photo-hub ./app
 
 FROM debian:stable-slim AS runtime
 WORKDIR /app
