@@ -6,7 +6,6 @@ use jsonwebtoken::jwk::JwkSet;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use yaml_rust2::Yaml;
-use yaml_rust2::yaml::Hash;
 
 use crate::setup::utils;
 
@@ -115,11 +114,11 @@ impl OidcWellKnownConfig {
     }
 }
 
-pub async fn setup_oidc_config(root: &Yaml) -> anyhow::Result<OidcConfig> {
-    let oidc = &root[OIDC_FIELD];
+pub async fn setup_oidc_config(root_application_properties: &Yaml, root_secrets: &Yaml) -> anyhow::Result<OidcConfig> {
+    let oidc = &root_application_properties[OIDC_FIELD];
 
-    let client_id = extract_client_id(oidc)?;
-    let client_secret = extract_client_secret(oidc)?;
+    let client_id = extract_client_id(oidc, root_secrets)?;
+    let client_secret = extract_client_secret(oidc, root_secrets)?;
     let auth_server_url = extract_auth_server_url(oidc)?;
     let redirect_uri = extract_redirect_uri(oidc)?;
     let scopes = extract_scopes(oidc)?;
@@ -156,14 +155,18 @@ async fn fetch_jwks(jwks_url: &Url) -> anyhow::Result<JwkSet> {
     Ok(jwks)
 }
 
-fn extract_client_id(root: &Yaml) -> anyhow::Result<String> {
+fn extract_client_id(root_application_properties: &Yaml, root_secrets: &Yaml) -> anyhow::Result<String> {
     env::var(OIDC_CLIENT_ID_ENV_VAR)
         .context("Environment variable OIDC_CLIENT_ID is not set or is empty")
         .or_else(|_| {
-            root[CLIENT_ID_FIELD]
+            root_application_properties[CLIENT_ID_FIELD]
                 .as_str()
                 .context("Missing or invalid 'client-id' field in OIDC configuration and 'OIDC_CLIENT_ID' environment variable is not set.")
-                .map(|id| id.to_string())
+                .or_else(|_| {
+                    root_secrets[CLIENT_ID_FIELD]
+                        .as_str()
+                        .context("Missing or invalid 'client-id' field in secrets file")
+                }).map(|id| id.to_string())
         })
 }
 
@@ -191,14 +194,18 @@ fn extract_redirect_uri(root: &Yaml) -> anyhow::Result<Url> {
         })
 }
 
-fn extract_client_secret(root: &Yaml) -> anyhow::Result<String> {
+fn extract_client_secret(root: &Yaml, root_secrets: &Yaml) -> anyhow::Result<String> {
     env::var(OIDC_CLIENT_SECRET_ENV_VAR)
         .context("Environment variable OIDC_CLIENT_SECRET is not set or is empty")
         .or_else(|_| {
             root[CLIENT_SECRET_FIELD]
                 .as_str()
                 .context("Missing or invalid 'client-secret' field in OIDC configuration and 'OIDC_CLIENT_SECRET' environment variable is not set.")
-                .map(|secret| secret.to_string())
+                .or_else(|_| {
+                    root_secrets[CLIENT_SECRET_FIELD]
+                        .as_str()
+                        .context("Missing or invalid 'client-secret' field in secrets configuration")
+                }).map(|id| id.to_string())
         })
 }
 
