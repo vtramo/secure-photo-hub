@@ -21,11 +21,12 @@ data:
     }
 
     template {
-    destination = "/etc/secrets/secrets.txt"
+    destination = "/etc/secrets/secrets.yaml"
     contents = <<EOT
     {{- with secret "fast-photo-hub/data/keycloak" }}
-    export CLIENT_ID="{{ .Data.data.clientId }}"
-    CLIENT_ID="{{ .Data.data.clientId }}"
+    oidc:
+      client-id: "{{ .Data.data.clientId }}"
+      client-secret: "{{ .Data.data.clientSecret }}"
     {{ end }}
     EOT
     }

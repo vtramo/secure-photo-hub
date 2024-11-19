@@ -35,18 +35,8 @@ spec:
   containers:
     - image: nginx
       name: nginx-container
-      args:
-        -
       ports:
         - containerPort: 80
       volumeMounts:
         - mountPath: /vault/secrets
           name: shared-data
-      volumes:
-        - name: commonconfig-volume
-          projected:
-            sources:
-              - configMap:
-                  name: test-configmap
-              - configMap:
-                  name: common-config
