@@ -11,10 +11,13 @@ pub use oidc::{OidcConfig, OidcWellKnownConfig, setup_oidc_config};
 
 use crate::setup::redis::{RedisConfig, setup_redis_config};
 
+use s3::setup_aws_config;
+
 mod http;
 mod oidc;
 mod redis;
 mod utils;
+mod s3;
 
 const CONFIG_LOCATION_ENV_VAR: &'static str = "CONFIG_LOCATION";
 const VAULT_SECRETS_LOCATION_ENV_VAR: &'static str = "VAULT_SECRETS_LOCATION";
@@ -25,6 +28,7 @@ const VAULT_SECRETS: LazyLock<&Path> = LazyLock::new(|| Path::new("resources/vau
 pub struct Config {
     oidc_config: OidcConfig,
     redis_config: RedisConfig,
+    aws_config: aws_config::SdkConfig,
 }
 
 impl Config {
@@ -55,10 +59,12 @@ pub async fn setup() -> anyhow::Result<Config> {
 
     let oidc_config = setup_oidc_config(&root_application_properties, &root_vault_secrets).await?;
     let redis_config = setup_redis_config(&root_application_properties)?;
+    let aws_config = setup_aws_config(&root_vault_secrets).await?;
 
     Ok(Config {
         oidc_config,
         redis_config,
+        aws_config,
     })
 }
 

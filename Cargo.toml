@@ -27,3 +27,5 @@ ring = "0.17.8"
 serde_json = "1.0.132"
 http = "1.1.0"
 yaml-rust2 = "0.9.0"
+aws-config = { version= "1.5.10", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.62.0"

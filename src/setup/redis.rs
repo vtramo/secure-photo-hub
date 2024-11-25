@@ -1,9 +1,9 @@
 use std::env;
+
 use anyhow::Context;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use yaml_rust2::Yaml;
-use yaml_rust2::yaml::Hash;
 
 use crate::setup::utils;
 

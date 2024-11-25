@@ -5,6 +5,7 @@ use actix_web::{App, HttpServer, web};
 use actix_web::cookie::{Key, SameSite};
 use actix_web::middleware::{from_fn, Logger};
 use anyhow::Context;
+use aws_sdk_s3::Client;
 
 use crate::{controller, security};
 use crate::setup::Config;
@@ -18,6 +19,8 @@ pub async fn init_http_server(config: Config) -> anyhow::Result<()> {
         .context("Failed to connect to Redis for session management")?;
     let oauth_redirect_uri_path = config.oidc_config().redirect_uri().path().to_string();
 
+    let aws_s3_client = Client::new(&config.aws_config);
+    
     HttpServer::new(move || {
         App::new()
             .wrap(from_fn(security::auth::middleware::authentication_middleware_oauth2_cookie))
