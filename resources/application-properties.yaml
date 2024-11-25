@@ -4,3 +4,5 @@ oidc:
   redirect-uri: http://localhost:8085/openid_redirect_uri_endpoint
 redis:
   host: redis://127.0.0.1:6379
+server:
+  port: 8085

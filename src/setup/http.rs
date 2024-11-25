@@ -21,6 +21,7 @@ pub async fn init_http_server(config: Config) -> anyhow::Result<()> {
 
     let aws_s3_client = Client::new(&config.aws_config);
     
+    let server_port = config.server_port;
     HttpServer::new(move || {
         App::new()
             .wrap(from_fn(security::auth::middleware::authentication_middleware_oauth2_cookie))
@@ -36,7 +37,8 @@ pub async fn init_http_server(config: Config) -> anyhow::Result<()> {
             .app_data(web::Data::new(config.clone()))
             .route(&oauth_redirect_uri_path, web::get().to(security::auth::oauth::oidc_redirect_endpoint))
             .service(controller::home)
-    }).bind(("0.0.0.0", 8085))?
+            .service(controller::post_photos)
+    }).bind(("0.0.0.0", server_port))?
         .run()
         .await?;
 
