@@ -1,0 +1,283 @@
+openapi: 3.0.3
+info:
+  title: Fast Photo Hub API
+  version: '0.1.0'
+  contact:
+    email: vv.tramo@gmail.com
+
+tags:
+  - name: Photos
+  - name: Albums
+  - name: Images
+
+paths:
+  /photos:
+    post:
+      tags:
+        - Photos
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  $ref: '#/components/schemas/Photo'
+                image:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Photo successfully created and returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Photo'
+    get:
+      tags:
+        - Photos
+      responses:
+        200:
+          description: A list of photos is successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Photo'
+  /photos/{id}:
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+    get:
+      tags:
+        - Photos
+      responses:
+        200:
+          description: A photo is successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Photo'
+    patch:
+      tags:
+        - Photos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  properties:
+                    albumId:
+                      type: string
+                - type: object
+                  properties:
+                    title:
+                      type: string
+      responses:
+        200:
+          description: Photo successfully updated and returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Photo'
+
+  /albums:
+    post:
+      tags:
+        - Albums
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                album:
+                  $ref: '#/components/schemas/Album'
+                coverImage:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Album successfully created with cover image
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Album'
+    get:
+      tags:
+        - Albums
+      responses:
+        200:
+          description: A list of albums is successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Album'
+
+  /images/{id}:
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+    get:
+      tags:
+        - Images
+      responses:
+        200:
+          description: The image with the specified ID is successfully retrieved for download
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+
+  /albums/{id}:
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+    get:
+      tags:
+        - Albums
+      responses:
+        200:
+          description: An album is successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Album'
+    patch:
+      tags:
+        - Albums
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  properties:
+                    albumId:
+                      type: string
+                - type: object
+                  properties:
+                    title:
+                      type: string
+      responses:
+        200:
+          description: Photo successfully updated and returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Photo'
+
+components:
+  schemas:
+    Photo:
+      type: object
+      required:
+        - id
+        - tags
+        - albumId
+        - category
+        - createdAt
+        - description
+        - imageId
+        - imageUrl
+        - title
+        - visibility
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the photo
+          readOnly: true
+        albumId:
+          type: string
+          description: Identifier for the album the photo belongs to
+          readOnly: true
+        title:
+          type: string
+          description: Title of the photo
+        description:
+          type: string
+          description: Description of the photo
+        category:
+          type: string
+          description: Category of the photo
+        tags:
+          type: string
+          description: Tags associated with the photo (comma-separated list)
+        visibility:
+          description: Visibility status of the photo (e.g., public, private)
+          allOf:
+            - $ref: "#/components/schemas/Visibility"
+        createdAt:
+          type: string
+          format: date-time
+          description: Date and time when the photo was created
+          readOnly: true
+        imageId:
+          type: string
+          description: Unique identifier for the image
+          readOnly: true
+        imageUrl:
+          type: string
+          format: uri
+          description: URL of the image
+          readOnly: true
+
+    Album:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the album
+          readOnly: true
+        title:
+          type: string
+          description: Title of the album
+        description:
+          type: string
+          description: Description of the album
+        category:
+          type: string
+          description: Category of the album
+          readOnly: true
+        tags:
+          type: string
+          description: Tags associated with the album (comma-separated list)
+          readOnly: true
+        visibility:
+          description: Visibility status of the album (e.g., public, private)
+          allOf:
+            - $ref: "#/components/schemas/Visibility"
+        totPhotos:
+          type: integer
+          description: Total number of photos in the album
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Date and time when the album was created
+          readOnly: true
+        coverImageId:
+          type: string
+          description: Unique identifier for the album's cover image
+          readOnly: true
+        coverImageUrl:
+          type: string
+          description: URL of the album's cover image
+          readOnly: true
+
+    Visibility:
+      type: string
+      enum:
+        - PUBLIC
+        - PRIVATE
