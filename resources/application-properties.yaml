@@ -6,3 +6,9 @@ redis:
   host: redis://127.0.0.1:6379
 server:
   port: 8085
+database:
+  host: 127.0.0.1
+  port: 5432
+  username: postgres
+  password: password
+  name: fastphotohub
