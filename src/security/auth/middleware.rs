@@ -4,6 +4,7 @@ use actix_web::body::{BoxBody, EitherBody, MessageBody};
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::middleware::Next;
 use reqwest::Url;
+use crate::routes;
 
 use crate::security::auth::oauth::{authorization_check, OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY, OAUTH_SESSION_KEY, OAuthRefreshTokenRequest, OAuthSecureAuthorizationRequest, OAuthSession, OAuthSessionTokens, UserInfoEndpoint, validate_access_token};
 use crate::security::auth::user::User;
@@ -19,6 +20,10 @@ pub async fn authentication_middleware_bearer_token(
     req: ServiceRequest,
     next: Next<impl MessageBody>,
 ) -> Result<ServiceResponse<EitherBody<BoxBody, impl MessageBody>>, Error> {
+    if is_health_check(&req) {
+        return Ok(next.call(req).await?.map_into_right_body());
+    }
+    
     let oidc_config = get_oidc_config(&req)?;
 
     if let Some(ref access_token) = extract_bearer_token(&req) {
@@ -59,7 +64,7 @@ pub async fn authentication_middleware_oauth2_cookie(
     req: ServiceRequest,
     next: Next<impl MessageBody>,
 ) -> Result<ServiceResponse<EitherBody<BoxBody, impl MessageBody>>, Error> {
-    if is_authenticated(&req) {
+    if is_health_check(&req) || is_authenticated(&req) {
         return Ok(next.call(req).await?.map_into_right_body());
     }
 
@@ -147,4 +152,8 @@ fn get_oidc_config(req: &ServiceRequest) -> Result<&OidcConfig, Error> {
 
 fn is_authenticated(req: &ServiceRequest) -> bool {
     req.extensions_mut().get::<AuthenticationMethod>().is_some()
+}
+
+fn is_health_check(req: &ServiceRequest) -> bool {
+    req.path() == routes::health_check::HEALTH_CHECK_ROUTE
 }

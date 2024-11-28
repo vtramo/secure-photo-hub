@@ -38,6 +38,7 @@ pub async fn init_http_server(config: Config) -> anyhow::Result<()> {
             .route(&oauth_redirect_uri_path, web::get().to(security::auth::oauth::oidc_redirect_endpoint))
             .service(controller::home)
             .service(controller::post_photos)
+            .route(routes::health_check::HEALTH_CHECK_ROUTE, web::get().to(routes::health_check::health_check))
     }).bind(("0.0.0.0", server_port))?
         .run()
         .await?;
