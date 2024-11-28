@@ -16,7 +16,7 @@ strip = "debuginfo"
 jsonwebtoken = "9.3.0"
 openssl = { version = "0.10.68", features = ["vendored"]}
 reqwest = { version = "0.12", features = ["json"] }
-serde = { version = "1.0.214", features = ["derive"] }
+serde = { version = "1.0.214", features = ["derive", "serde_derive"] }
 actix-web = "4.9.0"
 actix-session = { version = "0.10.1", features = ["redis-session"] }
 anyhow = "1.0.92"
@@ -29,7 +29,7 @@ http = "1.1.0"
 yaml-rust2 = "0.9.0"
 aws-config = { version= "1.5.10", features = ["behavior-version-latest"] }
 aws-sdk-s3 = "1.62.0"
-
+actix-multipart = "0.7.2"
 image = "0.25.5"
 futures-util = "0.3.31"
 async-stream = "0.3.6"
