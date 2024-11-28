@@ -116,9 +116,10 @@ impl OidcWellKnownConfig {
 
 pub async fn setup_oidc_config(root_application_properties: &Yaml, root_secrets: &Yaml) -> anyhow::Result<OidcConfig> {
     let oidc = &root_application_properties[OIDC_FIELD];
+    let oidc_secrets = &root_secrets[OIDC_FIELD];
 
-    let client_id = extract_client_id(oidc, root_secrets)?;
-    let client_secret = extract_client_secret(oidc, root_secrets)?;
+    let client_id = extract_client_id(oidc, oidc_secrets)?;
+    let client_secret = extract_client_secret(oidc, oidc_secrets)?;
     let auth_server_url = extract_auth_server_url(oidc)?;
     let redirect_uri = extract_redirect_uri(oidc)?;
     let scopes = extract_scopes(oidc)?;
