@@ -1,5 +1,5 @@
 [package]
-name = "fast-photo-hub"
+name = "secure-photo-hub"
 version = "0.1.0"
 edition = "2021"
 authors = ["Vincenzo Tramo <vv.tramo@gmail.com>"]

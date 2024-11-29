@@ -70,17 +70,35 @@ impl Deref for OidcConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct OidcWellKnownConfig {
     issuer: String,
-    #[serde(deserialize_with = "utils::deserialize_url", serialize_with = "utils::serialize_url")]
+    #[serde(
+        deserialize_with = "utils::deserialize_url",
+        serialize_with = "utils::serialize_url"
+    )]
     authorization_endpoint: Url,
-    #[serde(deserialize_with = "utils::deserialize_url", serialize_with = "utils::serialize_url")]
+    #[serde(
+        deserialize_with = "utils::deserialize_url",
+        serialize_with = "utils::serialize_url"
+    )]
     token_endpoint: Url,
-    #[serde(deserialize_with = "utils::deserialize_url", serialize_with = "utils::serialize_url")]
+    #[serde(
+        deserialize_with = "utils::deserialize_url",
+        serialize_with = "utils::serialize_url"
+    )]
     introspection_endpoint: Url,
-    #[serde(deserialize_with = "utils::deserialize_url", serialize_with = "utils::serialize_url")]
+    #[serde(
+        deserialize_with = "utils::deserialize_url",
+        serialize_with = "utils::serialize_url"
+    )]
     userinfo_endpoint: Url,
-    #[serde(deserialize_with = "utils::deserialize_url", serialize_with = "utils::serialize_url")]
+    #[serde(
+        deserialize_with = "utils::deserialize_url",
+        serialize_with = "utils::serialize_url"
+    )]
     end_session_endpoint: Url,
-    #[serde(deserialize_with = "utils::deserialize_url", serialize_with = "utils::serialize_url")]
+    #[serde(
+        deserialize_with = "utils::deserialize_url",
+        serialize_with = "utils::serialize_url"
+    )]
     jwks_uri: Url,
 }
 
@@ -114,7 +132,10 @@ impl OidcWellKnownConfig {
     }
 }
 
-pub async fn setup_oidc_config(root_application_properties: &Yaml, root_secrets: &Yaml) -> anyhow::Result<OidcConfig> {
+pub async fn setup_oidc_config(
+    root_application_properties: &Yaml,
+    root_secrets: &Yaml,
+) -> anyhow::Result<OidcConfig> {
     let oidc = &root_application_properties[OIDC_FIELD];
     let oidc_secrets = &root_secrets[OIDC_FIELD];
 
@@ -125,7 +146,8 @@ pub async fn setup_oidc_config(root_application_properties: &Yaml, root_secrets:
     let scopes = extract_scopes(oidc)?;
 
     let well_know_openid_config_url = build_well_known_openid_config_url(&auth_server_url)?;
-    let oidc_well_known_config = fetch_well_known_openid_config(&well_know_openid_config_url).await?;
+    let oidc_well_known_config =
+        fetch_well_known_openid_config(&well_know_openid_config_url).await?;
     let jwks = fetch_jwks(&oidc_well_known_config.jwks_uri).await?;
 
     Ok(OidcConfig {
@@ -156,7 +178,10 @@ async fn fetch_jwks(jwks_url: &Url) -> anyhow::Result<JwkSet> {
     Ok(jwks)
 }
 
-fn extract_client_id(root_application_properties: &Yaml, root_secrets: &Yaml) -> anyhow::Result<String> {
+fn extract_client_id(
+    root_application_properties: &Yaml,
+    root_secrets: &Yaml,
+) -> anyhow::Result<String> {
     env::var(OIDC_CLIENT_ID_ENV_VAR)
         .context("Environment variable OIDC_CLIENT_ID is not set or is empty")
         .or_else(|_| {
@@ -222,14 +247,15 @@ fn extract_auth_server_url(root: &Yaml) -> anyhow::Result<Url> {
         })
 }
 
-
 fn build_well_known_openid_config_url(auth_server_url: &Url) -> anyhow::Result<reqwest::Url> {
     let well_known_url = format!("{}/.well-known/openid-configuration", auth_server_url);
     reqwest::Url::parse(&well_known_url)
         .context("Failed to build well-known OpenID configuration URL from auth server URL")
 }
 
-async fn fetch_well_known_openid_config(well_know_openid_config_url: &reqwest::Url) -> anyhow::Result<OidcWellKnownConfig> {
+async fn fetch_well_known_openid_config(
+    well_know_openid_config_url: &reqwest::Url,
+) -> anyhow::Result<OidcWellKnownConfig> {
     let client = reqwest::Client::new();
 
     let response = client

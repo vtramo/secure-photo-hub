@@ -1,5 +1,5 @@
-use reqwest::Url;
 use crate::security::auth::oauth::OAuthAuthorizationResponse;
+use reqwest::Url;
 
 pub struct OAuthRefreshTokenRequest {
     refresh_token_endpoint: Url,

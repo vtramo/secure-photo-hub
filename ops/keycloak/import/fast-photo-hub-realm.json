@@ -1,6 +1,6 @@
 {
   "id": "287dc33e-639a-4fd1-a06f-9326e54a514b",
-  "realm": "fast-photo-hub",
+  "realm": "secure-photo-hub",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,
@@ -67,7 +67,7 @@
       },
       {
         "id": "52806409-8cbb-48b8-b00e-251f1280f1dd",
-        "name": "default-roles-fast-photo-hub",
+        "name": "default-roles-secure-photo-hub",
         "description": "${role_default-roles}",
         "composite": true,
         "composites": {
@@ -88,7 +88,7 @@
       }
     ],
     "client": {
-      "fast-photo-hub-rest-api": [
+      "secure-photo-hub-rest-api": [
         {
           "id": "bf2c6b50-7d57-4e64-b15e-d7cc2011f727",
           "name": "uma_protection",
@@ -417,7 +417,7 @@
   "groups": [],
   "defaultRole": {
     "id": "52806409-8cbb-48b8-b00e-251f1280f1dd",
-    "name": "default-roles-fast-photo-hub",
+    "name": "default-roles-secure-photo-hub",
     "description": "${role_default-roles}",
     "composite": true,
     "clientRole": false,
@@ -470,19 +470,19 @@
   "users": [
     {
       "id": "08bb3d22-fdce-49f8-9d51-2e71bdb33b8e",
-      "username": "service-account-fast-photo-hub-rest-api",
+      "username": "service-account-secure-photo-hub-rest-api",
       "emailVerified": false,
       "createdTimestamp": 1731098499781,
       "enabled": true,
       "totp": false,
-      "serviceAccountClientId": "fast-photo-hub-rest-api",
+      "serviceAccountClientId": "secure-photo-hub-rest-api",
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "default-roles-fast-photo-hub"
+        "default-roles-secure-photo-hub"
       ],
       "clientRoles": {
-        "fast-photo-hub-rest-api": [
+        "secure-photo-hub-rest-api": [
           "uma_protection"
         ]
       },
@@ -515,13 +515,13 @@
       "clientId": "account",
       "name": "${client_account}",
       "rootUrl": "${authBaseUrl}",
-      "baseUrl": "/realms/fast-photo-hub/account/",
+      "baseUrl": "/realms/secure-photo-hub/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "/realms/fast-photo-hub/account/*"
+        "/realms/secure-photo-hub/account/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -562,13 +562,13 @@
       "clientId": "account-console",
       "name": "${client_account-console}",
       "rootUrl": "${authBaseUrl}",
-      "baseUrl": "/realms/fast-photo-hub/account/",
+      "baseUrl": "/realms/secure-photo-hub/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "/realms/fast-photo-hub/account/*"
+        "/realms/secure-photo-hub/account/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -702,7 +702,7 @@
     },
     {
       "id": "190220a9-ab14-4e97-8fa0-c2099fea8e46",
-      "clientId": "fast-photo-hub-rest-api",
+      "clientId": "secure-photo-hub-rest-api",
       "name": "FastPhotoHub REST API",
       "description": "",
       "rootUrl": "",
@@ -820,7 +820,7 @@
         "resources": [
           {
             "name": "Default Resource",
-            "type": "urn:fast-photo-hub-rest-api:resources:default",
+            "type": "urn:secure-photo-hub-rest-api:resources:default",
             "ownerManagedAccess": false,
             "attributes": {},
             "uris": [
@@ -880,13 +880,13 @@
       "clientId": "security-admin-console",
       "name": "${client_security-admin-console}",
       "rootUrl": "${authAdminUrl}",
-      "baseUrl": "/admin/fast-photo-hub/console/",
+      "baseUrl": "/admin/secure-photo-hub/console/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "/admin/fast-photo-hub/console/*"
+        "/admin/secure-photo-hub/console/*"
       ],
       "webOrigins": [
         "+"

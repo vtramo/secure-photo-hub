@@ -19,10 +19,10 @@ SUPERUSER_PWD="${SUPERUSER_PWD:=password}"
 
 APP_USER="${APP_USER:=app}"
 APP_USER_PWD="${APP_USER_PWD:=secret}"
-APP_DB_NAME="${APP_DB_NAME:=fastphotohub}"
+APP_DB_NAME="${APP_DB_NAME:=securephotohub}"
 
 DATABASE_URL=postgres://${APP_USER}:${APP_USER_PWD}@localhost:${DB_PORT}/${APP_DB_NAME}
-MIGRATIONS_PATH=${MIGRATIONS_PATH:=../migrations}
+MIGRATIONS_PATH=${MIGRATIONS_PATH:=migrations}
 export DATABASE_URL
 
 CONTAINER_NAME="postgres"

@@ -1,5 +1,5 @@
 oidc:
-  auth-server.url: http://localhost:8080/realms/fast-photo-hub
+  auth-server.url: http://localhost:8080/realms/secure-photo-hub
   scopes: openid profile email offline_access
   redirect-uri: http://localhost:8085/openid_redirect_uri_endpoint
 redis:

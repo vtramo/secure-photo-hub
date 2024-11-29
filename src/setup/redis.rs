@@ -14,7 +14,10 @@ const MISSING_REDIS_HOST_MSG: &str = "Missing or invalid 'host' field in redis c
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RedisConfig {
-    #[serde(deserialize_with = "utils::deserialize_url", serialize_with = "utils::serialize_url")]
+    #[serde(
+        deserialize_with = "utils::deserialize_url",
+        serialize_with = "utils::serialize_url"
+    )]
     connection_string: Url,
 }
 
@@ -37,11 +40,15 @@ pub fn setup_redis_config(root: &Yaml) -> anyhow::Result<RedisConfig> {
 fn extract_redis_host(root: &Yaml) -> anyhow::Result<Url> {
     env::var(REDIS_HOST_ENV_VAR)
         .context("Environment variable REDIS_HOST is not set or is empty")
-        .and_then(|host| Url::parse(&host).context("Failed to parse REDIS_HOST environment variable as URL"))
+        .and_then(|host| {
+            Url::parse(&host).context("Failed to parse REDIS_HOST environment variable as URL")
+        })
         .or_else(|_| {
             root[REDIS_HOST_KEY]
                 .as_str()
                 .context(MISSING_REDIS_HOST_MSG)
-                .and_then(|host_str| Url::parse(host_str).context("Failed to parse 'redis.host' field as URL"))
+                .and_then(|host_str| {
+                    Url::parse(host_str).context("Failed to parse 'redis.host' field as URL")
+                })
         })
 }

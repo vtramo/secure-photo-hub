@@ -1,23 +1,27 @@
-use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-pub use authorization_request::{OAuthAuthorizationRequestState, OAuthResponseType, OAuthSecureAuthorizationRequest};
-pub use refresh_token_request::{OAuthRefreshTokenRequest};
-pub use token_validator::{authorization_check, OAuthValidatedTokens, validate_access_token, validate_id_token};
-pub use redirect_endpoint::{oidc_redirect_endpoint};
-pub use user_info_request::{UserInfoResponse, UserInfoEndpoint};
+pub use authorization_request::{
+    OAuthAuthorizationRequestState, OAuthResponseType, OAuthSecureAuthorizationRequest,
+};
 pub use claims::IdTokenClaims;
+pub use redirect_endpoint::oidc_redirect_endpoint;
+pub use refresh_token_request::OAuthRefreshTokenRequest;
+pub use token_validator::{
+    authorization_check, validate_access_token, validate_id_token, OAuthValidatedTokens,
+};
+pub use user_info_request::{UserInfoEndpoint, UserInfoResponse};
 
-mod authorization_request;
-mod token_validator;
-mod redirect_endpoint;
 mod access_token_request;
-mod refresh_token_request;
+mod authorization_request;
 mod claims;
+mod redirect_endpoint;
+mod refresh_token_request;
+mod token_validator;
 mod user_info_request;
 
-
-pub const OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY: &'static str = "oauth_authorization_request_state";
+pub const OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY: &'static str =
+    "oauth_authorization_request_state";
 pub const OAUTH_SESSION_KEY: &'static str = "oauth_session";
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -33,13 +37,13 @@ impl OAuthSession {
         access_token_exp: u64,
         refresh_token_exp: u64,
         id_token_exp: u64,
-        oauth_session_tokens: OAuthSessionTokens
+        oauth_session_tokens: OAuthSessionTokens,
     ) -> Self {
         Self {
             access_token_exp,
             refresh_token_exp,
             id_token_exp,
-            session_tokens: oauth_session_tokens
+            session_tokens: oauth_session_tokens,
         }
     }
 
@@ -73,7 +77,7 @@ impl From<&OAuthValidatedTokens> for OAuthSession {
             validated_tokens.access_token_exp(),
             validated_tokens.refresh_token_exp(),
             validated_tokens.id_token_exp(),
-            session_tokens
+            session_tokens,
         )
     }
 }
@@ -100,12 +104,17 @@ impl From<&OAuthValidatedTokens> for OAuthSessionTokens {
 }
 
 impl OAuthSessionTokens {
-    pub fn new(access_token: &str, refresh_token: &str, id_token: &str, nonce: Option<&str>) -> Self {
+    pub fn new(
+        access_token: &str,
+        refresh_token: &str,
+        id_token: &str,
+        nonce: Option<&str>,
+    ) -> Self {
         Self {
             access_token: access_token.to_string(),
             refresh_token: refresh_token.to_string(),
             id_token: id_token.to_string(),
-            nonce: nonce.map(|s| s.to_string())
+            nonce: nonce.map(|s| s.to_string()),
         }
     }
 
@@ -136,7 +145,7 @@ pub struct OAuthAuthorizationResponse {
     #[serde(rename = "not-before-policy")]
     not_before_policy: u64,
     session_state: String,
-    scope: String
+    scope: String,
 }
 
 impl OAuthAuthorizationResponse {

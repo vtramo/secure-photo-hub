@@ -1,10 +1,10 @@
-use jsonwebtoken::{Algorithm, decode_header, DecodingKey, TokenData, Validation};
 use jsonwebtoken::errors::ErrorKind;
-use jsonwebtoken::jwk::{JwkSet};
+use jsonwebtoken::jwk::JwkSet;
+use jsonwebtoken::{decode_header, Algorithm, DecodingKey, TokenData, Validation};
 use serde_json::Value;
 
-use crate::security::auth::oauth::{OAuthSessionTokens};
 use crate::security::auth::oauth::claims::IdTokenClaims;
+use crate::security::auth::oauth::OAuthSessionTokens;
 
 #[derive(Debug)]
 pub struct OAuthValidatedTokens {
@@ -37,11 +37,21 @@ impl OAuthValidatedTokens {
     }
 
     pub fn access_token_exp(&self) -> u64 {
-        self.access_token_claims.claims.get("exp").unwrap().as_u64().unwrap()
+        self.access_token_claims
+            .claims
+            .get("exp")
+            .unwrap()
+            .as_u64()
+            .unwrap()
     }
 
     pub fn refresh_token_exp(&self) -> u64 {
-        self.access_token_claims.claims.get("exp").unwrap().as_u64().unwrap() // TODO
+        self.access_token_claims
+            .claims
+            .get("exp")
+            .unwrap()
+            .as_u64()
+            .unwrap() // TODO
     }
 
     pub fn id_token_exp(&self) -> u64 {
@@ -55,9 +65,9 @@ pub enum TokenValidationError {
 }
 
 pub async fn authorization_check(
-    session_token: &OAuthSessionTokens, 
-    jwks: &JwkSet, 
-    client_id: &str
+    session_token: &OAuthSessionTokens,
+    jwks: &JwkSet,
+    client_id: &str,
 ) -> Option<OAuthValidatedTokens> {
     log::info!("Authorization Check");
 
@@ -78,7 +88,7 @@ pub async fn authorization_check(
         Err(TokenValidationError::ExpiredSignature) => {
             log::warn!("Expired tokens");
             None
-        },
+        }
 
         _ => None,
     }
@@ -110,7 +120,7 @@ pub async fn validate_access_token(
             log::error!("Error validating access token: {:?}", err);
             match err.kind() {
                 ErrorKind::ExpiredSignature => Err(TokenValidationError::ExpiredSignature),
-                _ => Err(TokenValidationError::Unknown)
+                _ => Err(TokenValidationError::Unknown),
             }
         }
     }
@@ -133,31 +143,36 @@ pub async fn validate_id_token(
             if let Some(id_token_nonce) = id_token_claims.nonce().clone() {
                 if let Some(nonce) = nonce {
                     if id_token_nonce != nonce {
-                        log::warn!("Nonce mismatch: expected {}, found {}", nonce, id_token_nonce);
+                        log::warn!(
+                            "Nonce mismatch: expected {}, found {}",
+                            nonce,
+                            id_token_nonce
+                        );
                         return Err(TokenValidationError::Unknown);
                     }
                 }
             }
 
             Ok(id_token_claims)
-        },
-
-        Err(err) => {
-            match err.kind() {
-                ErrorKind::ExpiredSignature => {
-                    log::warn!("ID token has expired: {}", err);
-                    Err(TokenValidationError::ExpiredSignature)
-                },
-                _ => {
-                    log::warn!("ID token validation failed: {}", err);
-                    Err(TokenValidationError::Unknown)
-                }
-            }
         }
+
+        Err(err) => match err.kind() {
+            ErrorKind::ExpiredSignature => {
+                log::warn!("ID token has expired: {}", err);
+                Err(TokenValidationError::ExpiredSignature)
+            }
+            _ => {
+                log::warn!("ID token validation failed: {}", err);
+                Err(TokenValidationError::Unknown)
+            }
+        },
     }
 }
 
-fn extract_decoding_key(token: &str, jwks: &JwkSet) -> Result<(DecodingKey, Algorithm), TokenValidationError> {
+fn extract_decoding_key(
+    token: &str,
+    jwks: &JwkSet,
+) -> Result<(DecodingKey, Algorithm), TokenValidationError> {
     let header = decode_header(token).map_err(|err| {
         log::warn!("Failed to decode token header: {}", err);
         TokenValidationError::Unknown

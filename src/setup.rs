@@ -7,24 +7,25 @@ use anyhow::Context;
 use yaml_rust2::{Yaml, YamlLoader};
 
 pub use http::init_http_server;
-pub use oidc::{OidcConfig, OidcWellKnownConfig, setup_oidc_config};
+pub use oidc::{setup_oidc_config, OidcConfig, OidcWellKnownConfig};
 use s3::setup_aws_config;
 
-use crate::setup::database::{DatabaseConfig, setup_database_config};
-use crate::setup::redis::{RedisConfig, setup_redis_config};
+use crate::setup::database::{setup_database_config, DatabaseConfig};
+use crate::setup::redis::{setup_redis_config, RedisConfig};
 
+mod database;
 mod http;
 mod oidc;
 mod redis;
-mod utils;
 mod s3;
-mod database;
+mod utils;
 
 const CONFIG_LOCATION_ENV_VAR: &'static str = "CONFIG_LOCATION";
 const VAULT_SECRETS_LOCATION_ENV_VAR: &'static str = "VAULT_SECRETS_LOCATION";
 const SERVER_PORT_ENV_VAR: &'static str = "SERVER_PORT";
 const SERVER_PORT_FIELD: &'static str = "server.port";
-const APPLICATION_PROPERTIES: LazyLock<&Path> = LazyLock::new(|| Path::new("resources/application-properties.yaml"));
+const APPLICATION_PROPERTIES: LazyLock<&Path> =
+    LazyLock::new(|| Path::new("resources/application-properties.yaml"));
 const VAULT_SECRETS: LazyLock<&Path> = LazyLock::new(|| Path::new("resources/vault-secrets.yaml"));
 
 #[derive(Debug, Clone)]
@@ -49,7 +50,8 @@ impl Config {
 pub async fn setup() -> anyhow::Result<Config> {
     let application_properties_path = get_application_properties_path();
     let vault_secrets_path = get_vault_secrets_path();
-    let application_properties = read_to_string(&application_properties_path).unwrap_or("x:|".to_string());
+    let application_properties =
+        read_to_string(&application_properties_path).unwrap_or("x:|".to_string());
     let secrets = read_to_string(&vault_secrets_path).unwrap_or("x:|".to_string());
 
     let root_application_properties = YamlLoader::load_from_str(&application_properties)
@@ -75,7 +77,7 @@ pub async fn setup() -> anyhow::Result<Config> {
         redis_config,
         database_config,
         aws_config,
-        server_port
+        server_port,
     })
 }
 
@@ -90,16 +92,9 @@ fn get_server_port(application_properties: &Yaml) -> u16 {
 
 fn get_application_properties_path() -> String {
     env::var(CONFIG_LOCATION_ENV_VAR)
-        .unwrap_or(APPLICATION_PROPERTIES
-            .to_str()
-            .unwrap()
-            .to_string())
+        .unwrap_or(APPLICATION_PROPERTIES.to_str().unwrap().to_string())
 }
 
 fn get_vault_secrets_path() -> String {
-    env::var(VAULT_SECRETS_LOCATION_ENV_VAR)
-        .unwrap_or(VAULT_SECRETS
-            .to_str()
-            .unwrap()
-            .to_string())
+    env::var(VAULT_SECRETS_LOCATION_ENV_VAR).unwrap_or(VAULT_SECRETS.to_str().unwrap().to_string())
 }

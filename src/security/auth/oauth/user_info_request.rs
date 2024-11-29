@@ -1,5 +1,5 @@
-use reqwest::Url;
 use anyhow::Result;
+use reqwest::Url;
 use serde::Deserialize;
 
 pub struct UserInfoEndpoint {

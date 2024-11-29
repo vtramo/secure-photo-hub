@@ -5,7 +5,6 @@ use reqwest::Url;
 use ring::rand::SecureRandom;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OAuthAuthorizationRequestState {
     state: String,
@@ -43,8 +42,10 @@ impl OAuthAuthorizationRequestState {
         let system_random = ring::rand::SystemRandom::new();
         system_random.fill(&mut buf).expect("Should be ok");
         let code_verifier = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(buf);
-        let code_verifier_digest = ring::digest::digest(&ring::digest::SHA256, code_verifier.as_bytes());
-        let code_verifier_digest = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(code_verifier_digest.as_ref());
+        let code_verifier_digest =
+            ring::digest::digest(&ring::digest::SHA256, code_verifier.as_bytes());
+        let code_verifier_digest =
+            base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(code_verifier_digest.as_ref());
         (code_verifier, code_verifier_digest)
     }
 
@@ -93,7 +94,12 @@ impl OAuthSecureAuthorizationRequest {
     const CODE_CHALLENGE_S256_METHOD: &'static str = "S256";
     const NONCE_PARAM: &'static str = "nonce";
 
-    pub fn code_flow(authorization_endpoint: &Url, client_id: &str, scope: &Vec<String>, redirect_uri: &Url) -> Self {
+    pub fn code_flow(
+        authorization_endpoint: &Url,
+        client_id: &str,
+        scope: &Vec<String>,
+        redirect_uri: &Url,
+    ) -> Self {
         Self {
             authorization_endpoint: authorization_endpoint.clone(),
             client_id: client_id.to_string(),
@@ -113,15 +119,40 @@ impl From<&OAuthSecureAuthorizationRequest> for Url {
     fn from(authorization_request: &OAuthSecureAuthorizationRequest) -> Self {
         let mut authorization_endpoint = authorization_request.authorization_endpoint.clone();
 
-        authorization_endpoint.query_pairs_mut()
-            .append_pair(OAuthSecureAuthorizationRequest::CLIENT_ID_PARAM, &authorization_request.client_id)
-            .append_pair(OAuthSecureAuthorizationRequest::REDIRECT_URI_PARAM, &authorization_request.redirect_uri.to_string())
-            .append_pair(OAuthSecureAuthorizationRequest::STATE_PARAM, &authorization_request.state.state)
-            .append_pair(OAuthSecureAuthorizationRequest::RESPONSE_TYPE_PARAM, &authorization_request.response_type.to_string())
-            .append_pair(OAuthSecureAuthorizationRequest::SCOPE_PARAM, &authorization_request.scope.join(" "))
-            .append_pair(OAuthSecureAuthorizationRequest::CODE_CHALLENGE_PARAM, &authorization_request.state.code_verifier_digest)
-            .append_pair(OAuthSecureAuthorizationRequest::CODE_CHALLENGE_METHOD_PARAM, OAuthSecureAuthorizationRequest::CODE_CHALLENGE_S256_METHOD)
-            .append_pair(OAuthSecureAuthorizationRequest::NONCE_PARAM, &authorization_request.state.nonce);
+        authorization_endpoint
+            .query_pairs_mut()
+            .append_pair(
+                OAuthSecureAuthorizationRequest::CLIENT_ID_PARAM,
+                &authorization_request.client_id,
+            )
+            .append_pair(
+                OAuthSecureAuthorizationRequest::REDIRECT_URI_PARAM,
+                &authorization_request.redirect_uri.to_string(),
+            )
+            .append_pair(
+                OAuthSecureAuthorizationRequest::STATE_PARAM,
+                &authorization_request.state.state,
+            )
+            .append_pair(
+                OAuthSecureAuthorizationRequest::RESPONSE_TYPE_PARAM,
+                &authorization_request.response_type.to_string(),
+            )
+            .append_pair(
+                OAuthSecureAuthorizationRequest::SCOPE_PARAM,
+                &authorization_request.scope.join(" "),
+            )
+            .append_pair(
+                OAuthSecureAuthorizationRequest::CODE_CHALLENGE_PARAM,
+                &authorization_request.state.code_verifier_digest,
+            )
+            .append_pair(
+                OAuthSecureAuthorizationRequest::CODE_CHALLENGE_METHOD_PARAM,
+                OAuthSecureAuthorizationRequest::CODE_CHALLENGE_S256_METHOD,
+            )
+            .append_pair(
+                OAuthSecureAuthorizationRequest::NONCE_PARAM,
+                &authorization_request.state.nonce,
+            );
 
         authorization_endpoint
     }
@@ -129,11 +160,13 @@ impl From<&OAuthSecureAuthorizationRequest> for Url {
 
 #[derive(Debug)]
 pub enum OAuthResponseType {
-    Code
+    Code,
 }
 
 impl Display for OAuthResponseType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self { OAuthResponseType::Code => f.write_str("code") }
+        match self {
+            OAuthResponseType::Code => f.write_str("code"),
+        }
     }
 }

@@ -46,11 +46,11 @@ done
 export VAULT_ADDR=http://localhost:8200
 export VAULT_TOKEN=dev-only-token
 
-vault secrets enable -path=fast-photo-hub kv-v2
-vault kv put -mount=fast-photo-hub keycloak client-id=B client-secret=A
+vault secrets enable -path=secure-photo-hub kv-v2
+vault kv put -mount=secure-photo-hub keycloak client-id=B client-secret=A
 
-vault policy write fast-photo-hub-keycloak-kv-ro - <<EOF
-path "fast-photo-hub/data/keycloak" {
+vault policy write secure-photo-hub-keycloak-kv-ro - <<EOF
+path "secure-photo-hub/data/keycloak" {
     capabilities = ["read", "list"]
 }
 EOF
@@ -61,10 +61,10 @@ vault write auth/kubernetes/config \
      kubernetes_host="$K8S_HOST" \
      kubernetes_ca_cert="$SA_CA_CRT" \
      issuer="https://kubernetes.default.svc.cluster.local"
-vault write auth/kubernetes/role/fast-photo-hub-keycloak-role \
+vault write auth/kubernetes/role/secure-photo-hub-keycloak-role \
      bound_service_account_names=vault-auth \
      bound_service_account_namespaces=default \
-     token_policies=fast-photo-hub-keycloak-kv-ro \
+     token_policies=secure-photo-hub-keycloak-kv-ro \
      ttl=24h
 
 kubectl proxy --address='0.0.0.0' --port=8001 --accept-hosts='^*$'

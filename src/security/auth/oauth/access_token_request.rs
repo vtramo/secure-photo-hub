@@ -34,7 +34,7 @@ impl OAuthAccessTokenRequest {
             client_secret: client_secret.to_string(),
             redirect_uri: redirect_uri.clone(),
             code: code.to_string(),
-            code_verifier: code_verifier.to_string()
+            code_verifier: code_verifier.to_string(),
         }
     }
 

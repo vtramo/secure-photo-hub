@@ -1,5 +1,5 @@
-use std::env;
 use anyhow::Context;
+use std::env;
 use yaml_rust2::Yaml;
 
 const AWS_ACCESS_KEY_ID_ENV_VAR: &str = "AWS_ACCESS_KEY_ID";
@@ -30,41 +30,53 @@ fn set_aws_environment_variables(
         env::set_var(AWS_SECRET_ACCESS_KEY_ENV_VAR, aws_secret_access_key);
         env::set_var(AWS_REGION_ENV_VAR, aws_region);
     };
-    
+
     Ok(())
 }
 
 fn extract_aws_access_key_id(aws_secrets: &Yaml) -> anyhow::Result<String> {
     env::var(AWS_ACCESS_KEY_ID_ENV_VAR)
-        .context(format!("Environment variable '{}' is not set or is empty", AWS_ACCESS_KEY_ID_ENV_VAR))
+        .context(format!(
+            "Environment variable '{}' is not set or is empty",
+            AWS_ACCESS_KEY_ID_ENV_VAR
+        ))
         .or_else(|_| {
             aws_secrets[AWS_ACCESS_KEY_ID_FIELD]
                 .as_str()
                 .context(missing_aws_secret(AWS_ACCESS_KEY_ID_FIELD))
                 .map(str::to_string)
-        }).map(|id| id.to_string())
+        })
+        .map(|id| id.to_string())
 }
 
 fn extract_aws_secret_access_key(aws_secrets: &Yaml) -> anyhow::Result<String> {
     env::var(AWS_SECRET_ACCESS_KEY_ENV_VAR)
-        .context(format!("Environment variable '{}' is not set or is empty", AWS_SECRET_ACCESS_KEY_ENV_VAR))
+        .context(format!(
+            "Environment variable '{}' is not set or is empty",
+            AWS_SECRET_ACCESS_KEY_ENV_VAR
+        ))
         .or_else(|_| {
             aws_secrets[AWS_SECRET_ACCESS_KEY_FIELD]
                 .as_str()
                 .context(missing_aws_secret(AWS_SECRET_ACCESS_KEY_FIELD))
                 .map(str::to_string)
-        }).map(|key| key.to_string())
+        })
+        .map(|key| key.to_string())
 }
 
 fn extract_aws_region(aws_secrets: &Yaml) -> anyhow::Result<String> {
     env::var(AWS_REGION_ENV_VAR)
-        .context(format!("Environment variable '{}' is not set or is empty", AWS_REGION_ENV_VAR))
+        .context(format!(
+            "Environment variable '{}' is not set or is empty",
+            AWS_REGION_ENV_VAR
+        ))
         .or_else(|_| {
             aws_secrets[AWS_REGION_FIELD]
                 .as_str()
                 .context(missing_aws_secret(AWS_REGION_FIELD))
                 .map(str::to_string)
-        }).map(|region| region.to_string())
+        })
+        .map(|region| region.to_string())
 }
 
 fn missing_aws_secret(secret_name: &str) -> String {

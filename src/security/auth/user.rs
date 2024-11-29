@@ -1,12 +1,12 @@
 use std::future::Future;
 use std::pin::Pin;
 
+use crate::security::auth::middleware::AuthenticationMethod;
 use actix_session::SessionExt;
-use actix_web::{FromRequest, HttpMessage, HttpRequest};
 use actix_web::dev::Payload;
 use actix_web::error::ErrorUnauthorized;
+use actix_web::{FromRequest, HttpMessage, HttpRequest};
 use serde::{Deserialize, Serialize};
-use crate::security::auth::middleware::AuthenticationMethod;
 
 use crate::security::auth::oauth::{IdTokenClaims, UserInfoResponse};
 use crate::security::auth::USER_SESSION_KEY;
@@ -56,7 +56,6 @@ impl From<UserInfoResponse> for User {
     }
 }
 
-
 impl FromRequest for User {
     type Error = actix_web::Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
@@ -74,11 +73,7 @@ fn get_authenticated_user(req: &HttpRequest) -> Option<User> {
     let mut extensions = req.extensions_mut();
     let authentication_method = extensions.get::<AuthenticationMethod>()?;
     match authentication_method {
-        AuthenticationMethod::OAuthCodeFlow => {
-            session.get::<User>(USER_SESSION_KEY).ok()?
-        },
-        AuthenticationMethod::Bearer => {
-            extensions.remove::<User>()
-        }
+        AuthenticationMethod::OAuthCodeFlow => session.get::<User>(USER_SESSION_KEY).ok()?,
+        AuthenticationMethod::Bearer => extensions.remove::<User>(),
     }
 }
