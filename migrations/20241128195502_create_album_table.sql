@@ -11,5 +11,5 @@ CREATE TABLE albums(
     cover_image_id uuid NOT NULL
         REFERENCES images(id)
         ON DELETE CASCADE,
-    created_at timestamptz NOT NULL
+    created_at timestamptz DEFAULT NOW()
 );

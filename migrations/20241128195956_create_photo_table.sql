@@ -6,14 +6,14 @@ CREATE TABLE photos(
     description TEXT NOT NULL,
     visibility visibility NOT NULL,
     owner_user_id uuid NOT NULL,
-    tags TEXT NOT NULL DEFAULT '',
-    category TEXT NOT NULL DEFAULT '',
-    album_id uuid NOT NULL
-        REFERENCES albums(id)
-        ON DELETE CASCADE,
+    tags TEXT[] DEFAULT '{}'::text[],
+    category TEXT DEFAULT '',
+    album_id uuid,
+--        REFERENCES albums(id)
+--        ON DELETE CASCADE,
     image_id uuid NOT NULL
         REFERENCES images(id)
         ON DELETE CASCADE,
     is_deleted boolean NOT NULL DEFAULT false,
-    created_at timestamptz NOT NULL
+    created_at timestamptz NOT NULL DEFAULT NOW()
 );

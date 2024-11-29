@@ -1,5 +1,5 @@
 -- Add migration script here
-CREATE TYPE image_format as ENUM (
+CREATE TYPE image_format AS ENUM (
     'Png',
     'Jpeg',
     'Gif',
@@ -18,11 +18,12 @@ CREATE TYPE image_format as ENUM (
     'Pcx'
 );
 
+
 CREATE TABLE images(
     id uuid NOT NULL,
     PRIMARY KEY(id),
     url TEXT NOT NULL,
     file_size BIGINT NOT NULL,
     format image_format NOT NULL,
-    created_at timestamptz NOT NULL
+    created_at timestamptz DEFAULT NOW()
 );
