@@ -10,7 +10,7 @@ use aws_sdk_s3::Client;
 use crate::setup::Config;
 use crate::{routes, security};
 
-pub async fn init_http_server(config: Config) -> anyhow::Result<()> {
+pub async fn spawn_http_server(config: Config) -> anyhow::Result<()> {
     log::info!("Init http server...");
 
     let redis_connection_string = config.redis_config.connection_string();

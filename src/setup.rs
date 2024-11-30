@@ -6,12 +6,16 @@ use std::sync::LazyLock;
 use anyhow::Context;
 use yaml_rust2::{Yaml, YamlLoader};
 
-pub use http::init_http_server;
-pub use oidc::{setup_oidc_config, OidcConfig, OidcWellKnownConfig};
 use s3::setup_aws_config;
 
-use crate::setup::database::{setup_database_config, DatabaseConfig};
-use crate::setup::redis::{setup_redis_config, RedisConfig};
+pub use setup::{oidc::OidcConfig, redis::RedisConfig, database::DatabaseConfig};
+
+use crate::setup;
+use crate::setup::database::{setup_database_config};
+use crate::setup::http::spawn_http_server;
+use crate::setup::logging::init_logging;
+use crate::setup::oidc::{setup_oidc_config};
+use crate::setup::redis::{setup_redis_config};
 
 mod database;
 mod http;
@@ -19,6 +23,7 @@ mod oidc;
 mod redis;
 mod s3;
 mod utils;
+mod logging;
 
 const CONFIG_LOCATION_ENV_VAR: &'static str = "CONFIG_LOCATION";
 const VAULT_SECRETS_LOCATION_ENV_VAR: &'static str = "VAULT_SECRETS_LOCATION";
@@ -47,7 +52,14 @@ impl Config {
     }
 }
 
-pub async fn setup() -> anyhow::Result<Config> {
+pub async fn spawn_app() -> anyhow::Result<()> {
+    init_logging()?;
+    let configuration = setup::setup().await?;
+    spawn_http_server(configuration).await?;
+    Ok(())
+}
+
+async fn setup() -> anyhow::Result<Config> {
     let application_properties_path = get_application_properties_path();
     let vault_secrets_path = get_vault_secrets_path();
     let application_properties =
