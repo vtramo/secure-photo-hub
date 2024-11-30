@@ -6,11 +6,9 @@ CREATE TABLE photos(
     description TEXT NOT NULL,
     visibility visibility NOT NULL,
     owner_user_id uuid NOT NULL,
-    tags TEXT[] DEFAULT '{}'::text[],
-    category TEXT DEFAULT '',
+    tags TEXT[] NOT NULL DEFAULT '{}'::text[],
+    category TEXT NOT NULL DEFAULT '',
     album_id uuid,
---        REFERENCES albums(id)
---        ON DELETE CASCADE,
     image_id uuid NOT NULL
         REFERENCES images(id)
         ON DELETE CASCADE,

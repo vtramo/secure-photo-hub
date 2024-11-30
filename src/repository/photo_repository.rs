@@ -1,22 +1,22 @@
 use anyhow::Context;
 use chrono::Utc;
-use sqlx::{Acquire, PgConnection, query_file};
+use sqlx::{Acquire, PgConnection, query_file, query_file_as};
 use sqlx::types::uuid;
 use uuid::Uuid;
 
-use crate::models::entity::{ImageFormatEntity, PhotoEntity, VisibilityEntity};
-use crate::models::entity::ImageEntity;
+use crate::models::entity::{ImageEntity, ImageFormatEntity, PhotoEntity, PhotoImageEntity, VisibilityEntity};
 use crate::models::service::CreatePhoto;
 use crate::repository::PostgresDatabase;
 
 #[async_trait::async_trait]
 pub trait PhotoRepository {
-    async fn create(&self, photo: CreatePhoto) -> anyhow::Result<PhotoEntity>;
+    async fn create_photo(&self, photo: CreatePhoto) -> anyhow::Result<PhotoEntity>;
+    async fn find_all_photo(&self) -> anyhow::Result<Vec<PhotoEntity>>;
 }
 
 #[async_trait::async_trait]
 impl PhotoRepository for PostgresDatabase {
-    async fn create(&self, create_photo: CreatePhoto) -> anyhow::Result<PhotoEntity> {
+    async fn create_photo(&self, create_photo: CreatePhoto) -> anyhow::Result<PhotoEntity> {
         let mut conn = self
             .acquire()
             .await
@@ -41,6 +41,18 @@ impl PhotoRepository for PostgresDatabase {
         tx.commit().await?;
 
         Ok(created_photo_entity)
+    }
+
+    async fn find_all_photo(&self) -> anyhow::Result<Vec<PhotoEntity>> {
+        let mut conn = self.acquire()
+            .await
+            .with_context(|| "Unable to acquire a database connection".to_string())?;
+
+        let photo_image_entities: Vec<_> = query_file_as!(PhotoImageEntity, "queries/postgres/find_all_photo.sql")
+            .fetch_all(&mut *conn)
+            .await?;
+
+        Ok(photo_image_entities.into_iter().map(PhotoEntity::from).collect())
     }
 }
 
@@ -128,13 +140,14 @@ mod tests {
     use crate::repository::PostgresDatabase;
 
     #[actix_web::test(flavor = "multi_thread", worker_threads = 1)]
-    async fn test() {
+    async fn should_return_photo_with_correct_details_after_creation() {
         let env: &'static str = env!("DATABASE_URL");
         let pg = PostgresDatabase::connect(env).await.unwrap();
 
         let owner_user_id = Uuid::new_v4();
         let image_id = Uuid::new_v4();
         let image_url = Url::parse("http://localhost:8080/").unwrap();
+        let album_id = uuid::Uuid::new_v4();
         let create_photo = CreatePhoto::new(
             "title".to_string(),
             "description".to_string(),
@@ -142,18 +155,27 @@ mod tests {
             vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
             owner_user_id,
             image_id,
-            None,
+            Some(album_id),
             Visibility::Private,
             image_url.clone(),
             1024,
             ImageFormat::Png,
         );
 
-        let created_photo = pg.create(create_photo).await.unwrap();
+        let created_photo = pg.create_photo(create_photo).await.unwrap();
 
-        dbg!(&created_photo);
         assert_eq!(owner_user_id, created_photo.owner_user_id);
         assert_eq!(image_url, created_photo.image.url);
         assert_eq!(image_id, created_photo.image.id);
+        assert_eq!(Some(album_id), created_photo.album_id);
+    }
+
+    #[actix_web::test(flavor = "multi_thread", worker_threads = 1)]
+    async fn test() {
+        let env: &'static str = env!("DATABASE_URL");
+        let pg = PostgresDatabase::connect(env).await.unwrap();
+
+        let photos = pg.find_all_photo().await.unwrap();
+        dbg!(&photos);
     }
 }
