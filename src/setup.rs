@@ -2,6 +2,7 @@ use std::env;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::sync::LazyLock;
+use actix_web::dev::Server;
 
 use anyhow::Context;
 use yaml_rust2::{Yaml, YamlLoader};
@@ -52,11 +53,11 @@ impl Config {
     }
 }
 
-pub async fn spawn_app() -> anyhow::Result<()> {
+pub async fn spawn_app() -> anyhow::Result<Server> {
     init_logging()?;
     let configuration = setup::setup().await?;
-    spawn_http_server(configuration).await?;
-    Ok(())
+    let server = spawn_http_server(configuration).await?;
+    Ok(server)
 }
 
 async fn setup() -> anyhow::Result<Config> {
