@@ -171,11 +171,14 @@ mod tests {
     }
 
     #[actix_web::test(flavor = "multi_thread", worker_threads = 1)]
-    async fn test() {
+    async fn should_return_all_photos_when_find_all_photos() {
         let env: &'static str = env!("DATABASE_URL");
         let pg = PostgresDatabase::connect(env).await.unwrap();
 
         let photos = pg.find_all_photo().await.unwrap();
-        dbg!(&photos);
+        
+        for photo in photos {
+            assert!(photo.id.is_nil() == false, "Photo ID should be valid");
+        }
     }
 }
