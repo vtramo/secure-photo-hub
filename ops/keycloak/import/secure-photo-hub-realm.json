@@ -703,7 +703,7 @@
     {
       "id": "190220a9-ab14-4e97-8fa0-c2099fea8e46",
       "clientId": "secure-photo-hub-rest-api",
-      "name": "FastPhotoHub REST API",
+      "name": "SecurePhotoHub REST API",
       "description": "",
       "rootUrl": "",
       "adminUrl": "",
