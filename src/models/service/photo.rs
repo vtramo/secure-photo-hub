@@ -1,3 +1,4 @@
+use chrono::Utc;
 use uuid::Uuid;
 use image::ImageFormat;
 use crate::models::service::{Image, Visibility};
@@ -13,6 +14,7 @@ pub struct Photo {
     album_id: Option<Uuid>,
     visibility: Visibility,
     image: Image,
+    created_at: chrono::DateTime<Utc>,
 }
 
 impl Photo {
@@ -26,6 +28,7 @@ impl Photo {
         album_id: Option<Uuid>,
         visibility: Visibility,
         image: Image,
+        created_at: chrono::DateTime<Utc>
     ) -> Self {
         Self {
             id,
@@ -37,6 +40,7 @@ impl Photo {
             album_id,
             visibility,
             image,
+            created_at
         }
     }
     pub fn id(&self) -> Uuid {
