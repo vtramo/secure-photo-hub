@@ -5,13 +5,14 @@ use sqlx::types::uuid;
 use uuid::Uuid;
 
 use crate::models::entity::{ImageEntity, ImageFormatEntity, PhotoEntity, PhotoImageEntity, VisibilityEntity};
-use crate::models::service::CreatePhoto;
+use crate::models::service::photo::CreatePhoto;
 use crate::repository::PostgresDatabase;
 
 #[async_trait::async_trait]
 pub trait PhotoRepository {
     async fn create_photo(&self, photo: CreatePhoto) -> anyhow::Result<PhotoEntity>;
     async fn find_all_photo(&self) -> anyhow::Result<Vec<PhotoEntity>>;
+    async fn find_photo_by_id(&self, id: &Uuid) -> anyhow::Result<Option<PhotoEntity>>;
 }
 
 #[async_trait::async_trait]
@@ -53,6 +54,21 @@ impl PhotoRepository for PostgresDatabase {
             .await?;
 
         Ok(photo_image_entities.into_iter().map(PhotoEntity::from).collect())
+    }
+
+    async fn find_photo_by_id(&self, id: &Uuid) -> anyhow::Result<Option<PhotoEntity>> {
+        let mut conn = self.acquire()
+            .await
+            .with_context(|| "Unable to acquire a database connection".to_string())?;
+
+        let photo_image_entity: Option<PhotoImageEntity> = query_file_as!(
+            PhotoImageEntity,
+            "queries/postgres/find_photo_by_id.sql",
+            id
+        ).fetch_optional(&mut *conn)
+        .await?;
+
+        Ok(photo_image_entity.map(PhotoEntity::from))
     }
 }
 
@@ -135,7 +151,8 @@ mod tests {
     use url::Url;
     use uuid::Uuid;
 
-    use crate::models::service::{CreatePhoto, Visibility};
+    use crate::models::service::Visibility;
+    use crate::models::service::photo::CreatePhoto;
     use crate::repository::photo_repository::PhotoRepository;
     use crate::repository::PostgresDatabase;
 
@@ -181,4 +198,38 @@ mod tests {
             assert!(photo.id.is_nil() == false, "Photo ID should be valid");
         }
     }
+
+    #[actix_web::test(flavor = "multi_thread", worker_threads = 1)]
+    async fn find_photo_by_id() {
+        let env: &'static str = env!("DATABASE_URL");
+        let pg = PostgresDatabase::connect(env).await.unwrap();
+
+        let owner_user_id = Uuid::new_v4();
+        let image_id = Uuid::new_v4();
+        let image_url = Url::parse("http://localhost:8080/").unwrap();
+        let album_id = uuid::Uuid::new_v4();
+        let create_photo = CreatePhoto::new(
+            "title".to_string(),
+            "description".to_string(),
+            "category".to_string(),
+            vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
+            owner_user_id,
+            image_id,
+            Some(album_id),
+            Visibility::Private,
+            image_url.clone(),
+            1024,
+            ImageFormat::Png,
+        );
+
+        let created_photo = pg.create_photo(create_photo).await.unwrap();
+        assert_eq!(image_id, created_photo.image.id);
+
+        let photo = pg.find_photo_by_id(&created_photo.id).await.unwrap();
+        assert!(photo.is_some());
+        let photo = photo.unwrap();
+        assert_eq!(created_photo.id, photo.id);
+        assert_eq!(created_photo.image.id, photo.image.id);
+    }
+    
 }
