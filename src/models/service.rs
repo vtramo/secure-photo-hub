@@ -1,4 +1,5 @@
 pub mod photo;
+pub mod album;
 
 use std::fmt;
 

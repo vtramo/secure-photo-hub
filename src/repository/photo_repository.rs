@@ -4,7 +4,8 @@ use sqlx::{Acquire, PgConnection, query_file, query_file_as};
 use sqlx::types::uuid;
 use uuid::Uuid;
 
-use crate::models::entity::{ImageEntity, ImageFormatEntity, PhotoEntity, PhotoImageEntity, VisibilityEntity};
+use crate::models::entity::{ImageEntity, ImageFormatEntity, VisibilityEntity};
+use crate::models::entity::photo::{PhotoEntity, PhotoImageEntity};
 use crate::models::service::photo::CreatePhoto;
 use crate::repository::PostgresDatabase;
 
@@ -73,7 +74,7 @@ impl PhotoRepository for PostgresDatabase {
 }
 
 impl PostgresDatabase {
-    async fn insert_image(
+    pub async fn insert_image(
         url: &url::Url,
         image_id: Uuid,
         format: ImageFormatEntity,
@@ -100,7 +101,7 @@ impl PostgresDatabase {
         })
     }
 
-    async fn insert_photo(
+    pub async fn insert_photo(
         create_photo: CreatePhoto,
         image_entity: ImageEntity,
         conn: &mut PgConnection,
