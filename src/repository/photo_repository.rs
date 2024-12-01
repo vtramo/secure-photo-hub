@@ -12,7 +12,7 @@ use crate::repository::PostgresDatabase;
 #[async_trait::async_trait]
 pub trait PhotoRepository {
     async fn create_photo(&self, photo: CreatePhoto) -> anyhow::Result<PhotoEntity>;
-    async fn find_all_photo(&self) -> anyhow::Result<Vec<PhotoEntity>>;
+    async fn find_all_photos(&self) -> anyhow::Result<Vec<PhotoEntity>>;
     async fn find_photo_by_id(&self, id: &Uuid) -> anyhow::Result<Option<PhotoEntity>>;
 }
 
@@ -45,7 +45,7 @@ impl PhotoRepository for PostgresDatabase {
         Ok(created_photo_entity)
     }
 
-    async fn find_all_photo(&self) -> anyhow::Result<Vec<PhotoEntity>> {
+    async fn find_all_photos(&self) -> anyhow::Result<Vec<PhotoEntity>> {
         let mut conn = self.acquire()
             .await
             .with_context(|| "Unable to acquire a database connection".to_string())?;
@@ -193,7 +193,7 @@ mod tests {
         let env: &'static str = env!("DATABASE_URL");
         let pg = PostgresDatabase::connect(env).await.unwrap();
 
-        let photos = pg.find_all_photo().await.unwrap();
+        let photos = pg.find_all_photos().await.unwrap();
         
         for photo in photos {
             assert!(photo.id.is_nil() == false, "Photo ID should be valid");

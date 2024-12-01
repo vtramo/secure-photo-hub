@@ -1,10 +1,11 @@
 use anyhow::Context;
-use sqlx::{Acquire, PgConnection, query_file};
+use futures_util::FutureExt;
+use sqlx::{Acquire, PgConnection, query_file, query_file_as};
 use sqlx::postgres::PgQueryResult;
 use uuid::Uuid;
 
 use crate::models::entity::{ImageEntity, ImageFormatEntity, VisibilityEntity};
-use crate::models::entity::album::AlbumEntity;
+use crate::models::entity::album::{AlbumCoverImageEntity, AlbumEntity};
 use crate::models::service::album::CreateAlbum;
 use crate::repository::PostgresDatabase;
 
@@ -12,6 +13,7 @@ use crate::repository::PostgresDatabase;
 pub trait AlbumRepository {
     async fn create_album(&self, album: CreateAlbum) -> anyhow::Result<AlbumEntity>;
     async fn move_photo_to_album(&self, photo_id: &Uuid, album_id: &Uuid) -> anyhow::Result<bool>;
+    async fn find_all_albums(&self) -> anyhow::Result<Vec<AlbumEntity>>;
 }
 
 #[async_trait::async_trait]
@@ -55,8 +57,21 @@ impl AlbumRepository for PostgresDatabase {
             album_id
         ).execute(&mut *conn)
             .await?;
-        
+
         Ok(result.rows_affected() == 1)
+    }
+
+    async fn find_all_albums(&self) -> anyhow::Result<Vec<AlbumEntity>> {
+        let mut conn = self
+            .acquire()
+            .await
+            .with_context(|| "Unable to acquire a database connection".to_string())?;
+        
+        let album_entities: Vec<_> = query_file_as!(AlbumCoverImageEntity, "queries/postgres/find_all_albums.sql")
+            .fetch_all(&mut *conn)
+            .await?;
+        
+        Ok(album_entities.into_iter().map(AlbumEntity::from).collect())
     }
 }
 
@@ -145,7 +160,7 @@ mod tests {
     async fn should_move_photo_to_album() {
         let env: &'static str = env!("DATABASE_URL");
         let pg = PostgresDatabase::connect(env).await.unwrap();
-        
+
         let owner_user_id = Uuid::new_v4();
         let image_id = Uuid::new_v4();
         let image_url = Url::parse("http://localhost:8080/").unwrap();
@@ -189,5 +204,40 @@ mod tests {
         assert!(move_result);
         let updated_photo = pg.find_photo_by_id(&created_photo.id).await.unwrap().unwrap();
         assert_eq!(updated_photo.album_id, Some(album_id));
+    }
+
+    #[actix_web::test(flavor = "multi_thread", worker_threads = 1)]
+    async fn should_create_and_find_album() {
+        let env: &'static str = env!("DATABASE_URL");
+        let pg = PostgresDatabase::connect(env).await.unwrap();
+
+        let owner_user_id = Uuid::new_v4();
+        let cover_image_id = Uuid::new_v4();
+        let cover_image_url = Url::parse("http://localhost:8080/cover_image").unwrap();
+        let title = "New Album".to_string();
+        let description = "Album description".to_string();
+        let visibility = Visibility::Private;
+
+        let create_album = CreateAlbum::new(
+            title.clone(),
+            description.clone(),
+            visibility.clone(),
+            owner_user_id,
+            cover_image_id,
+            cover_image_url.clone(),
+            2048,
+            ImageFormat::Jpeg,
+        );
+
+        let created_album = pg.create_album(create_album).await.unwrap();
+
+        assert_eq!(created_album.title, title);
+        assert_eq!(created_album.description, description);
+        assert_eq!(created_album.visibility, visibility.into());
+        assert_eq!(created_album.owner_user_id, owner_user_id);
+
+        let albums = pg.find_all_albums().await.unwrap();
+
+        assert!(albums.iter().any(|album| album.id == created_album.id));
     }
 }
