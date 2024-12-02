@@ -19,4 +19,6 @@ SELECT
 FROM
     photos
 LEFT JOIN
-    images ON photos.image_id = images.id;
+    images ON photos.image_id = images.id
+LIMIT $1
+OFFSET $2;

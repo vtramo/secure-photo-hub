@@ -9,8 +9,8 @@ use crate::models::service::album::CreateAlbum;
 use crate::repository::PostgresDatabase;
 
 #[async_trait::async_trait]
-pub trait AlbumRepository {
-    async fn create_album(&self, album: CreateAlbum) -> anyhow::Result<AlbumEntity>;
+pub trait AlbumRepository: Clone + Send + Sync + 'static {
+    async fn create_album(&self, album: &CreateAlbum) -> anyhow::Result<AlbumEntity>;
     async fn move_photo_to_album(&self, photo_id: &Uuid, album_id: &Uuid) -> anyhow::Result<bool>;
     async fn find_all_albums(&self) -> anyhow::Result<Vec<AlbumEntity>>;
     async fn find_album_by_id(&self, id: &Uuid) -> anyhow::Result<Option<AlbumEntity>>;
@@ -18,7 +18,7 @@ pub trait AlbumRepository {
 
 #[async_trait::async_trait]
 impl AlbumRepository for PostgresDatabase {
-    async fn create_album(&self, create_album: CreateAlbum) -> anyhow::Result<AlbumEntity> {
+    async fn create_album(&self, create_album: &CreateAlbum) -> anyhow::Result<AlbumEntity> {
         let mut conn = self
             .acquire()
             .await
@@ -36,7 +36,7 @@ impl AlbumRepository for PostgresDatabase {
 
         let created_album_entity = Self::insert_album(
             create_album,
-            album_cover_image,
+            &album_cover_image,
             &mut *tx
         ).await?;
 
@@ -91,8 +91,8 @@ impl AlbumRepository for PostgresDatabase {
 
 impl PostgresDatabase {
     async fn insert_album(
-        create_album: CreateAlbum,
-        cover_image_entity: ImageEntity,
+        create_album: &CreateAlbum,
+        cover_image_entity: &ImageEntity,
         conn: &mut PgConnection
     ) -> anyhow::Result<AlbumEntity> {
         let album_id = Uuid::new_v4();
@@ -122,9 +122,9 @@ impl PostgresDatabase {
             visibility,
             cover_image: ImageEntity {
                 id: cover_image_entity.id,
-                url: cover_image_entity.url,
+                url: cover_image_entity.url.clone(),
                 size: cover_image_entity.size,
-                format: cover_image_entity.format,
+                format: cover_image_entity.format.clone(),
                 created_at: cover_image_entity.created_at,
             },
             created_at: created_album.created_at,
@@ -167,7 +167,7 @@ mod tests {
             ImageFormat::Jpeg,
         );
 
-        let created_album = pg.create_album(create_album).await.unwrap();
+        let created_album = pg.create_album(&create_album).await.unwrap();
 
         assert_eq!(owner_user_id, created_album.owner_user_id);
         assert_eq!(title, created_album.title);
@@ -198,7 +198,7 @@ mod tests {
             1024,
             ImageFormat::Png,
         );
-        let created_photo = pg.create_photo(create_photo).await.expect("");
+        let created_photo = pg.create_photo(&create_photo).await.expect("");
         assert_eq!(created_photo.album_id, Some(Uuid::nil()));
 
         let title = "New Album".to_string();
@@ -216,7 +216,7 @@ mod tests {
             2048,
             ImageFormat::Jpeg,
         );
-        let created_album = pg.create_album(create_album).await.unwrap();
+        let created_album = pg.create_album(&create_album).await.unwrap();
         assert_eq!(created_album.title, title);
         assert_eq!(created_album.owner_user_id, owner_user_id);
 
@@ -250,7 +250,7 @@ mod tests {
             ImageFormat::Jpeg,
         );
 
-        let created_album = pg.create_album(create_album).await.unwrap();
+        let created_album = pg.create_album(&create_album).await.unwrap();
 
         assert_eq!(created_album.title, title);
         assert_eq!(created_album.description, description);
@@ -289,7 +289,7 @@ mod tests {
             ImageFormat::Jpeg,
         );
 
-        let created_album = pg.create_album(create_album).await.unwrap();
+        let created_album = pg.create_album(&create_album).await.unwrap();
 
         let found_album = pg.find_album_by_id(&created_album.id).await.unwrap();
         assert_eq!(found_album, Some(created_album));

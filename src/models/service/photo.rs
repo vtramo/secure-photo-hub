@@ -1,6 +1,7 @@
 use chrono::Utc;
 use uuid::Uuid;
 use image::ImageFormat;
+use crate::models::entity::photo::PhotoEntity;
 use crate::models::service::{Image, Visibility};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -147,6 +148,23 @@ impl CreatePhoto {
             url,
             size,
             format,
+        }
+    }
+}
+
+impl From<PhotoEntity> for Photo {
+    fn from(photo_entity: PhotoEntity) -> Self {
+        Self {
+            id: photo_entity.id,
+            title: photo_entity.title,
+            description: photo_entity.description,
+            category: photo_entity.category,
+            tags: photo_entity.tags,
+            owner_user_id: photo_entity.owner_user_id,
+            album_id: photo_entity.album_id,
+            visibility: Visibility::from(photo_entity.visibility),
+            image: Image::from(photo_entity.image),
+            created_at: Default::default(),
         }
     }
 }

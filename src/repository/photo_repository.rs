@@ -9,15 +9,15 @@ use crate::models::service::photo::CreatePhoto;
 use crate::repository::PostgresDatabase;
 
 #[async_trait::async_trait]
-pub trait PhotoRepository {
-    async fn create_photo(&self, photo: CreatePhoto) -> anyhow::Result<PhotoEntity>;
-    async fn find_all_photos(&self) -> anyhow::Result<Vec<PhotoEntity>>;
+pub trait PhotoRepository: Clone + Send + Sync + 'static {
+    async fn create_photo(&self, photo: &CreatePhoto) -> anyhow::Result<PhotoEntity>;
+    async fn find_all_photos(&self, limit: u32, offset: u32) -> anyhow::Result<Vec<PhotoEntity>>;
     async fn find_photo_by_id(&self, id: &Uuid) -> anyhow::Result<Option<PhotoEntity>>;
 }
 
 #[async_trait::async_trait]
 impl PhotoRepository for PostgresDatabase {
-    async fn create_photo(&self, create_photo: CreatePhoto) -> anyhow::Result<PhotoEntity> {
+    async fn create_photo(&self, photo: &CreatePhoto) -> anyhow::Result<PhotoEntity> {
         let mut conn = self
             .acquire()
             .await
@@ -26,16 +26,16 @@ impl PhotoRepository for PostgresDatabase {
         let mut tx = conn.begin().await?;
 
         let created_image_entity = Self::insert_image(
-            create_photo.url(),
-            create_photo.image_id(),
-            ImageFormatEntity::from(create_photo.format()),
-            create_photo.size(),
+            photo.url(),
+            photo.image_id(),
+            ImageFormatEntity::from(photo.format()),
+            photo.size(),
             &mut *tx,
         ).await?;
 
         let created_photo_entity = Self::insert_photo(
-            create_photo,
-            created_image_entity,
+            photo,
+            &created_image_entity,
             &mut tx
         ).await?;
 
@@ -44,12 +44,17 @@ impl PhotoRepository for PostgresDatabase {
         Ok(created_photo_entity)
     }
 
-    async fn find_all_photos(&self) -> anyhow::Result<Vec<PhotoEntity>> {
+    async fn find_all_photos(&self, limit: u32, offset: u32) -> anyhow::Result<Vec<PhotoEntity>> {
         let mut conn = self.acquire()
             .await
             .with_context(|| "Unable to acquire a database connection".to_string())?;
 
-        let photo_image_entities: Vec<_> = query_file_as!(PhotoImageEntity, "queries/postgres/find_all_photo.sql")
+        let photo_image_entities: Vec<_> = query_file_as!(
+            PhotoImageEntity, 
+            "queries/postgres/find_all_photo.sql",
+            limit as i64,
+            offset as i64
+        )
             .fetch_all(&mut *conn)
             .await?;
 
@@ -93,13 +98,13 @@ impl PostgresDatabase {
             .cloned()
             .take()
             .ok_or(anyhow!("Unable to insert an image"))?;
-        
+
         Ok(created_image)
     }
 
     pub async fn insert_photo(
-        create_photo: CreatePhoto,
-        image_entity: ImageEntity,
+        create_photo: &CreatePhoto,
+        image_entity: &ImageEntity,
         conn: &mut PgConnection,
     ) -> anyhow::Result<PhotoEntity> {
         let photo_id = Uuid::new_v4();
@@ -140,7 +145,7 @@ impl PostgresDatabase {
             tags,
             category,
             visibility,
-            image: image_entity,
+            image: image_entity.clone(),
             created_at: created_photo_image_entity.created_at,
             is_deleted: created_photo_image_entity.is_deleted,
         })
@@ -181,7 +186,7 @@ mod tests {
             ImageFormat::Png,
         );
 
-        let created_photo = pg.create_photo(create_photo).await.unwrap();
+        let created_photo = pg.create_photo(&create_photo).await.unwrap();
 
         assert_eq!(owner_user_id, created_photo.owner_user_id);
         assert_eq!(image_url.to_string(), created_photo.image.url);
@@ -194,7 +199,7 @@ mod tests {
         let env: &'static str = env!("DATABASE_URL");
         let pg = PostgresDatabase::connect(env).await.unwrap();
 
-        let photos = pg.find_all_photos().await.unwrap();
+        let photos = pg.find_all_photos(30, 0).await.unwrap();
         
         for photo in photos {
             assert!(photo.id.is_nil() == false, "Photo ID should be valid");
@@ -224,7 +229,7 @@ mod tests {
             ImageFormat::Png,
         );
 
-        let created_photo = pg.create_photo(create_photo).await.unwrap();
+        let created_photo = pg.create_photo(&create_photo).await.unwrap();
         assert_eq!(image_id, created_photo.image.id);
 
         let photo = pg.find_photo_by_id(&created_photo.id).await.unwrap();
