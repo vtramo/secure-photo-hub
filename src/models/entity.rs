@@ -10,16 +10,16 @@ use crate::models::service::Visibility;
 pub mod photo;
 pub mod album;
 
-#[derive(sqlx::FromRow, Debug)]
+#[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
 pub struct ImageEntity {
     pub id: Uuid,
-    pub url: url::Url,
-    pub size: u64,
+    pub url: String,
+    pub size: i64,
     pub format: ImageFormatEntity,
     pub created_at: chrono::DateTime<Utc>
 }
 
-#[derive(sqlx::Type, Debug, Serialize, Deserialize)]
+#[derive(sqlx::Type, Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[sqlx(type_name = "image_format")]
 pub enum ImageFormatEntity {
     Png,
@@ -64,7 +64,7 @@ impl From<ImageFormat> for ImageFormatEntity {
     }
 }
 
-#[derive(Clone, Debug, Copy, Serialize, Deserialize, PartialEq, sqlx::Type)]
+#[derive(Clone, Debug, Copy, Serialize, Deserialize, Eq, PartialEq, sqlx::Type)]
 #[sqlx(type_name = "visibility")]
 pub enum VisibilityEntity {
     Public,

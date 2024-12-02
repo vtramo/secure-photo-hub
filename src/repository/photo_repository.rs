@@ -1,11 +1,10 @@
-use anyhow::Context;
-use chrono::Utc;
-use sqlx::{Acquire, PgConnection, query_file, query_file_as};
+use anyhow::{anyhow, Context};
+use sqlx::{Acquire, PgConnection, query_file_as};
 use sqlx::types::uuid;
 use uuid::Uuid;
 
 use crate::models::entity::{ImageEntity, ImageFormatEntity, VisibilityEntity};
-use crate::models::entity::photo::{PhotoEntity, PhotoImageEntity};
+use crate::models::entity::photo::{PhotoEntity, PhotoImageEntity, PhotoNoImageEntity};
 use crate::models::service::photo::CreatePhoto;
 use crate::repository::PostgresDatabase;
 
@@ -81,24 +80,21 @@ impl PostgresDatabase {
         file_size: u64,
         conn: &mut PgConnection,
     ) -> anyhow::Result<ImageEntity> {
-        let created_at = Utc::now();
-
-        query_file!(
+        let created_image: ImageEntity = query_file_as!(
+            ImageEntity,
             "queries/postgres/insert_image.sql",
             image_id,
             url.to_string(),
             file_size as i64,
             format as _
-        ).execute(conn)
-        .await?;
-
-        Ok(ImageEntity {
-            id: image_id,
-            url: url.clone(),
-            size: file_size,
-            format,
-            created_at,
-        })
+        ).fetch_all(conn)
+            .await?
+            .get(0)
+            .cloned()
+            .take()
+            .ok_or(anyhow!("Unable to insert an image"))?;
+        
+        Ok(created_image)
     }
 
     pub async fn insert_photo(
@@ -114,9 +110,10 @@ impl PostgresDatabase {
         let tags = create_photo.tags().clone();
         let category = create_photo.category().to_string();
         let album_id = create_photo.album_id().unwrap_or(Uuid::nil());
-        let image_id = image_entity.id.clone();
+        let image_id = create_photo.image_id().clone();
 
-        query_file!(
+        let created_photo_image_entity: PhotoNoImageEntity = query_file_as!(
+            PhotoNoImageEntity,
             "queries/postgres/insert_photo.sql",
             photo_id,
             title,
@@ -127,12 +124,16 @@ impl PostgresDatabase {
             category,
             album_id,
             image_id
-        ).execute(conn)
-            .await?;
+        ).fetch_all(conn)
+            .await?
+            .get(0)
+            .cloned()
+            .take()
+            .ok_or(anyhow!("Unable to insert a photo"))?;
 
         Ok(PhotoEntity {
-            id: photo_id,
-            album_id: if album_id.is_nil() { None } else { Some(album_id) },
+            id: created_photo_image_entity.id,
+            album_id: created_photo_image_entity.album_id,
             owner_user_id,
             title,
             description,
@@ -140,8 +141,8 @@ impl PostgresDatabase {
             category,
             visibility,
             image: image_entity,
-            created_at: Utc::now(),
-            is_deleted: false,
+            created_at: created_photo_image_entity.created_at,
+            is_deleted: created_photo_image_entity.is_deleted,
         })
     }
 }
@@ -152,8 +153,8 @@ mod tests {
     use url::Url;
     use uuid::Uuid;
 
-    use crate::models::service::Visibility;
     use crate::models::service::photo::CreatePhoto;
+    use crate::models::service::Visibility;
     use crate::repository::photo_repository::PhotoRepository;
     use crate::repository::PostgresDatabase;
 
@@ -183,7 +184,7 @@ mod tests {
         let created_photo = pg.create_photo(create_photo).await.unwrap();
 
         assert_eq!(owner_user_id, created_photo.owner_user_id);
-        assert_eq!(image_url, created_photo.image.url);
+        assert_eq!(image_url.to_string(), created_photo.image.url);
         assert_eq!(image_id, created_photo.image.id);
         assert_eq!(Some(album_id), created_photo.album_id);
     }

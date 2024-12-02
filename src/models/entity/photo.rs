@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use crate::models::entity::{ImageEntity, ImageFormatEntity, VisibilityEntity};
 
-#[derive(sqlx::FromRow, Debug)]
+#[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
 pub struct PhotoEntity {
     pub id: Uuid,
     pub album_id: Option<Uuid>,
@@ -30,8 +30,8 @@ impl From<PhotoImageEntity> for PhotoEntity {
             visibility: photo_image_entity.visibility,
             image: ImageEntity {
                 id: photo_image_entity.image_id,
-                url: url::Url::parse(&photo_image_entity.url).expect("Should be a valid url!"),
-                size: photo_image_entity.size as u64,
+                url: photo_image_entity.url,
+                size: photo_image_entity.size,
                 format: photo_image_entity.format,
                 created_at: photo_image_entity.image_created_at,
             },
@@ -41,7 +41,7 @@ impl From<PhotoImageEntity> for PhotoEntity {
     }
 }
 
-#[derive(sqlx::FromRow, Debug)]
+#[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
 pub struct PhotoImageEntity {
     pub photo_id: Uuid,
     pub title: String,
@@ -60,4 +60,19 @@ pub struct PhotoImageEntity {
     pub size: i64,
     pub format: ImageFormatEntity,
     pub image_created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
+pub struct PhotoNoImageEntity {
+    pub id: Uuid,
+    pub title: String,
+    pub description: String,
+    pub visibility: VisibilityEntity,
+    pub owner_user_id: Uuid,
+    pub tags: Vec<String>,
+    pub category: String,
+    pub album_id: Option<Uuid>,
+    pub image_id: Uuid,
+    pub is_deleted: bool,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }

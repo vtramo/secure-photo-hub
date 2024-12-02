@@ -1,8 +1,7 @@
-use url::Url;
 use uuid::Uuid;
 use crate::models::entity::{ImageEntity, ImageFormatEntity, VisibilityEntity};
 
-#[derive(sqlx::FromRow, Debug)]
+#[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
 pub struct AlbumEntity {
     pub id: Uuid,
     pub owner_user_id: Uuid,
@@ -13,7 +12,7 @@ pub struct AlbumEntity {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(sqlx::FromRow, Debug)]
+#[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
 pub struct AlbumCoverImageEntity {
     pub album_id: Uuid,
     pub title: String,
@@ -40,12 +39,23 @@ impl From<AlbumCoverImageEntity> for AlbumEntity {
             visibility: album_cover_image_entity.visibility,
             cover_image: ImageEntity {
                 id: album_cover_image_entity.image_id,
-                url: Url::parse(&album_cover_image_entity.url).expect("impl From<AlbumCoverImageEntity> for AlbumEntity"),
-                size: album_cover_image_entity.size as u64,
+                url: album_cover_image_entity.url,
+                size: album_cover_image_entity.size,
                 format: album_cover_image_entity.format,
                 created_at: album_cover_image_entity.image_created_at,
             },
             created_at: album_cover_image_entity.album_created_at,
         }
     }
+}
+
+#[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
+pub struct AlbumNoCoverImageEntity {
+    pub id: Uuid,
+    pub owner_user_id: Uuid,
+    pub title: String,
+    pub description: String,
+    pub visibility: VisibilityEntity,
+    pub cover_image_id: Uuid,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
