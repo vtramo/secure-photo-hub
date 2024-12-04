@@ -18,7 +18,7 @@ where
 {
     async fn get_all_photos(&self) -> anyhow::Result<Page<Photo>> {
         let photos = self.photo_repository
-            .find_all_photos(30, 0)
+            .find_all_photos(30, 0) // TODO: add pagination
             .await?
             .into_iter()
             .map(Photo::from)
@@ -27,6 +27,14 @@ where
         let tot_photos = photos.len();
         Ok(Page::new(photos, 0, tot_photos as u32))
     }
+
+    async fn get_photo_by_id(&self, id: &Uuid) -> anyhow::Result<Option<Photo>> {
+        Ok(self.photo_repository
+            .find_photo_by_id(id)
+            .await?
+            .map(Photo::from))
+    }
+
 }
 
 #[allow(unused_imports)]
