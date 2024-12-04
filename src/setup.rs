@@ -13,7 +13,7 @@ pub use setup::{oidc::OidcConfig, redis::RedisConfig, database::DatabaseConfig};
 
 use crate::setup;
 use crate::setup::database::{setup_database_config};
-use crate::setup::http::spawn_http_server;
+use crate::setup::http::create_http_server;
 use crate::setup::logging::init_logging;
 use crate::setup::oidc::{setup_oidc_config};
 use crate::setup::redis::{setup_redis_config};
@@ -56,7 +56,7 @@ impl Config {
 pub async fn spawn_app() -> anyhow::Result<Server> {
     init_logging()?;
     let configuration = setup::setup().await?;
-    let server = spawn_http_server(configuration).await?;
+    let server = create_http_server(configuration).await?;
     Ok(server)
 }
 

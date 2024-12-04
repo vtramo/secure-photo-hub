@@ -1,5 +1,5 @@
 use actix_session::config::BrowserSession;
-use actix_session::storage::RedisSessionStore;
+use actix_session::storage::{RedisSessionStore};
 use actix_session::SessionMiddleware;
 use actix_web::cookie::{Key, SameSite};
 use actix_web::middleware::{from_fn, Logger};
@@ -11,7 +11,7 @@ use aws_sdk_s3::Client;
 use crate::setup::Config;
 use crate::{routes, security};
 
-pub async fn spawn_http_server(config: Config) -> anyhow::Result<Server> {
+pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
     log::info!("Init http server...");
 
     let redis_connection_string = config.redis_config.connection_string();
@@ -57,7 +57,7 @@ pub async fn spawn_http_server(config: Config) -> anyhow::Result<Server> {
                 web::get().to(routes::health_check::health_check),
             )
             .service(routes::home)
-            .service(routes::post_photos)
+            .service(routes::photo::post_photos)
     })
         .bind(("0.0.0.0", server_port))?
         .run();
