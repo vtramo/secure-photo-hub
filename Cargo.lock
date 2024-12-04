@@ -3645,6 +3645,7 @@ dependencies = [
  "image",
  "jsonwebtoken",
  "log",
+ "mime",
  "openssl",
  "reqwest",
  "ring",
