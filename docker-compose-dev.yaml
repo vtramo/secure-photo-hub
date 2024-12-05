@@ -1,22 +1,23 @@
 services:
-#  secure-photo-hub:
-#    build:
-#      dockerfile: Dockerfile
-#      context: .
-#    ports:
-#      - 8085:8085
-#    depends_on:
-#      keycloak:
-#        condition: service_healthy
-#      redis:
-#        condition: service_healthy
-#    environment:
-#      - OIDC_AUTH_SERVER_URL=http://keycloak:8080/realms/secure-photo-hub
-#      - OIDC_CLIENT_ID=secure-photo-hub-rest-api
-#      - OIDC_CLIENT_SECRET=ERMXusbPy62B1JiEGwT7bKMcal8mrwId
-#      - OIDC_SCOPES=openid profile email offline_access
-#      - OIDC_REDIRECT_URI=http://secure-photo-hub:8085/openid_redirect_uri_endpoint
-#      - REDIS_HOST=redis://redis:6379
+  secure-photo-hub:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    profiles: [backend]
+    ports:
+      - 8085:8085
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - OIDC_AUTH_SERVER_URL=http://keycloak:8080/realms/secure-photo-hub
+      - OIDC_CLIENT_ID=secure-photo-hub-rest-api
+      - OIDC_CLIENT_SECRET=ERMXusbPy62B1JiEGwT7bKMcal8mrwId
+      - OIDC_SCOPES=openid profile email offline_access
+      - OIDC_REDIRECT_URI=http://secure-photo-hub:8085/openid_redirect_uri_endpoint
+      - REDIS_HOST=redis://redis:6379
 
   redis:
     image: redis
@@ -61,6 +62,8 @@ services:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - 5432:5432
+
+
 
 volumes:
   postgres-data:
