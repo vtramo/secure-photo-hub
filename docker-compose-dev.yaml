@@ -20,7 +20,7 @@ services:
       - REDIS_HOST=redis://redis:6379
 
   redis:
-    image: redis
+    image: redis:7.4.1
     healthcheck:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
     ports:
@@ -63,7 +63,22 @@ services:
     ports:
       - 5432:5432
 
-
+  localstack:
+    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
+    image: localstack/localstack
+    ports:
+      - 127.0.0.1:4566:4566
+      - 127.0.0.1:4510-4559:4510-4559
+      - 3030:3030
+    environment:
+      - DEBUG=1
+      - SERVICES=s3
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - PORT_WEB_UI=3030
+    volumes:
+      - ./ops/s3/localstack:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   postgres-data:

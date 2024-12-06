@@ -1,6 +1,6 @@
 use uuid::Uuid;
 use crate::models::service::pagination::Page;
-use crate::models::service::photo::Photo;
+use crate::models::service::photo::{Photo, UploadPhoto};
 
 pub mod models;
 mod repository;
@@ -13,5 +13,5 @@ pub mod service;
 pub trait PhotoService: Clone + Send + Sync + 'static {
     async fn get_all_photos(&self) -> anyhow::Result<Page<Photo>>;
     async fn get_photo_by_id(&self, id: &Uuid) -> anyhow::Result<Option<Photo>>;
-    async fn create_photo(&self, ) -> anyhow::Result<Photo>;
+    async fn create_photo(&self, upload_photo: UploadPhoto) -> anyhow::Result<Photo>;
 }

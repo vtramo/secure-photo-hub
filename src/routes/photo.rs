@@ -1,24 +1,25 @@
 use actix_multipart::form::MultipartForm;
-use actix_web::{post, Responder, HttpResponse};
+use actix_web::{Responder, HttpResponse, web};
 use crate::models::api::UploadPhotoApi;
-use crate::models::service::photo::{UploadImage};
+use crate::models::service::photo::{UploadImage, UploadPhoto};
+use crate::PhotoService;
 use crate::security::auth::user::User;
+use crate::setup::AppState;
 
-#[post("/photos")]
-pub async fn post_photos(
+
+pub async fn post_photos<PS: PhotoService>(
     user: User,
-    MultipartForm(form): MultipartForm<UploadPhotoApi>
+    MultipartForm(upload_photo_api): MultipartForm<UploadPhotoApi>,
+    app_state: web::Data<AppState<PS>>,
 ) -> impl Responder {
-    let UploadPhotoApi { 
-        file: mut temp_file,
-        metadata: mut metadata,
-    } = form;
+    let upload_photo = UploadPhoto::try_from(upload_photo_api).unwrap();
 
-    dbg!(temp_file.size, &temp_file.content_type, &temp_file.file_name);
-    match UploadImage::try_from(temp_file) {
-        Ok(upload_image) => {},
-        Err(err) => return HttpResponse::BadRequest().body(format!("error: {:?}", err)), // TODO: api error handling
-    };
+    let photo = app_state
+        .get_ref()
+        .photo_service()
+        .create_photo(upload_photo)
+        .await
+        .unwrap();
 
-    HttpResponse::NoContent().finish()
+    HttpResponse::Created().json(photo.title())
 }

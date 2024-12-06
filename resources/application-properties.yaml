@@ -9,6 +9,4 @@ server:
 database:
   host: 127.0.0.1
   port: 5432
-  username: postgres
-  password: password
-  name: securephotohub
+  name: secure_photo_hub_db

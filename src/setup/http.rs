@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use actix_session::config::BrowserSession;
 use actix_session::storage::{RedisSessionStore};
 use actix_session::SessionMiddleware;
@@ -9,7 +10,19 @@ use anyhow::Context;
 use aws_sdk_s3::Client;
 
 use crate::setup::Config;
-use crate::{routes, security};
+use crate::{PhotoService, repository, routes, security, service};
+use crate::repository::PostgresDatabase;
+
+#[derive(Debug, Clone)]
+pub struct AppState<PS: PhotoService> {
+    photo_service: Arc<PS>,
+}
+
+impl<PS> AppState<PS> where PS: PhotoService {
+    pub fn photo_service(&self) -> Arc<PS> {
+        self.photo_service.clone()
+    }
+}
 
 pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
     log::info!("Init http server...");
@@ -21,10 +34,9 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
     let oauth_redirect_uri_path = config.oidc_config().redirect_uri().path().to_string();
 
     let aws_s3_client = Client::new(&config.aws_config);
-    // aws_s3_client.put_object()
-    //     .bucket("")
-    //     .key("a")
-    //     .body(ByteStream::from())
+    let database = repository::PostgresDatabase::connect_with_db_config(&config.database_config).await?;
+    let photo_service = service::photo::Service::new(database, aws_s3_client);
+    let app_state = AppState { photo_service: Arc::new(photo_service) };
 
     let server_port = config.server_port;
     let server = HttpServer::new(move || {
@@ -48,6 +60,7 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
                 "%r - %a - %{User-Agent}i - Response Status Code: %s",
             ))
             .app_data(web::Data::new(config.clone()))
+            .app_data(web::Data::new(app_state.clone()))
             .route(
                 &oauth_redirect_uri_path,
                 web::get().to(security::auth::oauth::oidc_redirect_endpoint),
@@ -56,8 +69,11 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
                 routes::health_check::HEALTH_CHECK_ROUTE,
                 web::get().to(routes::health_check::health_check),
             )
+            .route(
+                "/photos",
+                web::post().to(routes::photo::post_photos::<service::photo::Service<PostgresDatabase>>)
+            )
             .service(routes::home)
-            .service(routes::photo::post_photos)
     })
         .bind(("0.0.0.0", server_port))?
         .run();
