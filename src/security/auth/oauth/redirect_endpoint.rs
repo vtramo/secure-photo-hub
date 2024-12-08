@@ -10,7 +10,7 @@ use crate::security::auth::oauth::{
     authorization_check, OAuthAuthorizationRequestState, OAuthSession, OAuthSessionTokens,
     OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY, OAUTH_SESSION_KEY,
 };
-use crate::security::auth::user::User;
+use crate::security::auth::user::AuthenticatedUser;
 use crate::security::auth::USER_SESSION_KEY;
 use crate::setup::Config;
 
@@ -90,7 +90,7 @@ pub async fn oidc_redirect_endpoint(
 
                 if let Err(e) = session.insert(
                     USER_SESSION_KEY,
-                    User::from(validated_tokens.id_token_claims()),
+                    AuthenticatedUser::from(validated_tokens.id_token_claims()),
                 ) {
                     log::error!("Failed to insert user session: {:?}", e);
                     return HttpResponse::InternalServerError().finish();

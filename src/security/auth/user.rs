@@ -12,7 +12,7 @@ use crate::security::auth::oauth::{IdTokenClaims, UserInfoResponse};
 use crate::security::auth::USER_SESSION_KEY;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct User {
+pub struct AuthenticatedUser {
     id: String,
     username: String,
     given_name: String,
@@ -22,13 +22,32 @@ pub struct User {
     email_verified: bool,
 }
 
-impl User {
+impl AuthenticatedUser {
     pub fn full_name(&self) -> &str {
         &self.full_name
     }
+    pub fn new(
+        id: &str, 
+        username: &str, 
+        given_name: &str, 
+        family_name: &str, 
+        full_name: &str, 
+        email: &str, 
+        email_verified: bool
+    ) -> Self {
+        Self { 
+            id: id.to_string(), 
+            username: username.to_string(), 
+            given_name: given_name.to_string(), 
+            family_name: family_name.to_string(), 
+            full_name: full_name.to_string(), 
+            email: email.to_string(), 
+            email_verified 
+        }
+    }
 }
 
-impl From<&IdTokenClaims> for User {
+impl From<&IdTokenClaims> for AuthenticatedUser {
     fn from(id_token_claims: &IdTokenClaims) -> Self {
         Self {
             id: id_token_claims.sub().to_string(),
@@ -42,7 +61,7 @@ impl From<&IdTokenClaims> for User {
     }
 }
 
-impl From<UserInfoResponse> for User {
+impl From<UserInfoResponse> for AuthenticatedUser {
     fn from(value: UserInfoResponse) -> Self {
         Self {
             id: value.sub().to_string(),
@@ -56,7 +75,7 @@ impl From<UserInfoResponse> for User {
     }
 }
 
-impl FromRequest for User {
+impl FromRequest for AuthenticatedUser {
     type Error = actix_web::Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
 
@@ -68,12 +87,12 @@ impl FromRequest for User {
     }
 }
 
-fn get_authenticated_user(req: &HttpRequest) -> Option<User> {
+fn get_authenticated_user(req: &HttpRequest) -> Option<AuthenticatedUser> {
     let session = req.get_session();
     let mut extensions = req.extensions_mut();
     let authentication_method = extensions.get::<AuthenticationMethod>()?;
     match authentication_method {
-        AuthenticationMethod::OAuthCodeFlow => session.get::<User>(USER_SESSION_KEY).ok()?,
-        AuthenticationMethod::Bearer => extensions.remove::<User>(),
+        AuthenticationMethod::OAuthCodeFlow => session.get::<AuthenticatedUser>(USER_SESSION_KEY).ok()?,
+        AuthenticationMethod::Bearer => extensions.remove::<AuthenticatedUser>(),
     }
 }

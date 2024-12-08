@@ -173,17 +173,17 @@ mod tests {
         let image_url = Url::parse("http://localhost:8080/").unwrap();
         let album_id = uuid::Uuid::new_v4();
         let create_photo = CreatePhoto::new(
-            "title".to_string(),
-            "description".to_string(),
-            "category".to_string(),
-            vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
-            owner_user_id,
-            image_id,
-            Some(album_id),
-            Visibility::Private,
-            image_url.clone(),
+            "title",
+            "description",
+            "category",
+            &vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
+            &owner_user_id,
+            &image_id,
+            &Some(album_id),
+            &Visibility::Private,
+            &image_url,
             1024,
-            ImageFormat::Png,
+            &ImageFormat::Png,
         );
 
         let created_photo = pg.create_photo(&create_photo).await.unwrap();
@@ -216,17 +216,17 @@ mod tests {
         let image_url = Url::parse("http://localhost:8080/").unwrap();
         let album_id = uuid::Uuid::new_v4();
         let create_photo = CreatePhoto::new(
-            "title".to_string(),
-            "description".to_string(),
-            "category".to_string(),
-            vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
-            owner_user_id,
-            image_id,
-            Some(album_id),
-            Visibility::Private,
-            image_url.clone(),
+            "title",
+            "description",
+            "category",
+            &vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
+            &owner_user_id,
+            &image_id,
+            &Some(album_id),
+            &Visibility::Private,
+            &image_url,
             1024,
-            ImageFormat::Png,
+            &ImageFormat::Png,
         );
 
         let created_photo = pg.create_photo(&create_photo).await.unwrap();

@@ -11,7 +11,7 @@ use crate::security::auth::oauth::{
     OAuthSecureAuthorizationRequest, OAuthSession, OAuthSessionTokens, UserInfoEndpoint,
     OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY, OAUTH_SESSION_KEY,
 };
-use crate::security::auth::user::User;
+use crate::security::auth::user::AuthenticatedUser;
 use crate::security::auth::USER_SESSION_KEY;
 use crate::setup::{Config, OidcConfig};
 
@@ -37,7 +37,7 @@ pub async fn authentication_middleware_bearer_token(
                     UserInfoEndpoint::new(oidc_config.userinfo_endpoint(), access_token);
                 match user_info_endpoint.fetch_user_info().await {
                     Ok(user_info_response) => {
-                        let user = User::from(user_info_response);
+                        let user = AuthenticatedUser::from(user_info_response);
                         req.get_session().clear();
                         req.extensions_mut().insert(user);
                         req.extensions_mut().insert(AuthenticationMethod::Bearer);
@@ -146,7 +146,7 @@ pub async fn authentication_middleware_oauth2_cookie(
                     session.insert(OAUTH_SESSION_KEY, OAuthSession::from(&validated_tokens))?;
                     session.insert(
                         USER_SESSION_KEY,
-                        User::from(validated_tokens.id_token_claims()),
+                        AuthenticatedUser::from(validated_tokens.id_token_claims()),
                     )?;
                 } else {
                     log::warn!("Unauthorized");

@@ -7,6 +7,6 @@ pub mod photo;
 
 
 #[get("/")]
-pub async fn home(user: security::auth::user::User) -> impl Responder {
+pub async fn home(user: security::auth::user::AuthenticatedUser) -> impl Responder {
     HttpResponse::Ok().body(format!("{:#?}", user))
 }
