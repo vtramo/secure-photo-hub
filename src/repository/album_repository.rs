@@ -3,8 +3,8 @@ use sqlx::{Acquire, PgConnection, query_file, query_file_as};
 use sqlx::postgres::PgQueryResult;
 use uuid::Uuid;
 
-use crate::models::entity::{ImageEntity, ImageFormatEntity, VisibilityEntity};
-use crate::models::entity::album::{AlbumCoverImageEntity, AlbumEntity, AlbumNoCoverImageEntity};
+use crate::models::entity::{ImageFormatEntity, ImageReferenceEntity, VisibilityEntity};
+use crate::models::entity::album::{AlbumCoverImageReferenceEntity, AlbumEntity, AlbumNoCoverImageReferenceEntity};
 use crate::models::service::album::CreateAlbum;
 use crate::repository::PostgresDatabase;
 
@@ -26,7 +26,7 @@ impl AlbumRepository for PostgresDatabase {
 
         let mut tx = conn.begin().await?;
 
-        let album_cover_image = Self::insert_image(
+        let album_cover_image = Self::insert_image_reference(
             create_album.cover_image_url(),
             create_album.cover_image_id(),
             ImageFormatEntity::from(create_album.cover_image_format()),
@@ -67,7 +67,7 @@ impl AlbumRepository for PostgresDatabase {
             .await
             .with_context(|| "Unable to acquire a database connection".to_string())?;
 
-        let album_entities: Vec<_> = query_file_as!(AlbumCoverImageEntity, "queries/postgres/find_all_albums.sql")
+        let album_entities: Vec<_> = query_file_as!(AlbumCoverImageReferenceEntity, "queries/postgres/find_all_albums.sql")
             .fetch_all(&mut *conn)
             .await?;
 
@@ -80,8 +80,8 @@ impl AlbumRepository for PostgresDatabase {
             .await
             .with_context(|| "Unable to acquire a database connection".to_string())?;
 
-        let option_album: Option<AlbumCoverImageEntity> = 
-            query_file_as!(AlbumCoverImageEntity, "queries/postgres/find_album_by_id.sql", id)
+        let option_album: Option<AlbumCoverImageReferenceEntity> = 
+            query_file_as!(AlbumCoverImageReferenceEntity, "queries/postgres/find_album_by_id.sql", id)
                 .fetch_optional(&mut *conn)
                 .await?;
         
@@ -92,7 +92,7 @@ impl AlbumRepository for PostgresDatabase {
 impl PostgresDatabase {
     async fn insert_album(
         create_album: &CreateAlbum,
-        cover_image_entity: &ImageEntity,
+        cover_image_entity: &ImageReferenceEntity,
         conn: &mut PgConnection
     ) -> anyhow::Result<AlbumEntity> {
         let album_id = Uuid::new_v4();
@@ -102,8 +102,8 @@ impl PostgresDatabase {
         let cover_image_id = create_album.cover_image_id().clone();
         let visibility = VisibilityEntity::from(create_album.visibility().clone());
         
-        let created_album: AlbumNoCoverImageEntity = query_file_as!(
-            AlbumNoCoverImageEntity,
+        let created_album: AlbumNoCoverImageReferenceEntity = query_file_as!(
+            AlbumNoCoverImageReferenceEntity,
             "queries/postgres/insert_album.sql",
             album_id,
             title,
@@ -120,7 +120,7 @@ impl PostgresDatabase {
             title,
             description,
             visibility,
-            cover_image: ImageEntity {
+            cover_image: ImageReferenceEntity {
                 id: cover_image_entity.id,
                 url: cover_image_entity.url.clone(),
                 size: cover_image_entity.size,

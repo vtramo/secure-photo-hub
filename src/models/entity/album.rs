@@ -1,5 +1,5 @@
 use uuid::Uuid;
-use crate::models::entity::{ImageEntity, ImageFormatEntity, VisibilityEntity};
+use crate::models::entity::{ImageReferenceEntity, ImageFormatEntity, VisibilityEntity};
 
 #[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
 pub struct AlbumEntity {
@@ -8,12 +8,12 @@ pub struct AlbumEntity {
     pub title: String,
     pub description: String,
     pub visibility: VisibilityEntity,
-    pub cover_image: ImageEntity,
+    pub cover_image: ImageReferenceEntity,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
-pub struct AlbumCoverImageEntity {
+pub struct AlbumCoverImageReferenceEntity {
     pub album_id: Uuid,
     pub title: String,
     pub description: String,
@@ -29,15 +29,15 @@ pub struct AlbumCoverImageEntity {
     pub image_created_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl From<AlbumCoverImageEntity> for AlbumEntity {
-    fn from(album_cover_image_entity: AlbumCoverImageEntity) -> Self {
+impl From<AlbumCoverImageReferenceEntity> for AlbumEntity {
+    fn from(album_cover_image_entity: AlbumCoverImageReferenceEntity) -> Self {
         Self {
             id: album_cover_image_entity.album_id,
             owner_user_id: album_cover_image_entity.owner_user_id,
             title: album_cover_image_entity.title,
             description: album_cover_image_entity.description,
             visibility: album_cover_image_entity.visibility,
-            cover_image: ImageEntity {
+            cover_image: ImageReferenceEntity {
                 id: album_cover_image_entity.image_id,
                 url: album_cover_image_entity.url,
                 size: album_cover_image_entity.size,
@@ -50,7 +50,7 @@ impl From<AlbumCoverImageEntity> for AlbumEntity {
 }
 
 #[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
-pub struct AlbumNoCoverImageEntity {
+pub struct AlbumNoCoverImageReferenceEntity {
     pub id: Uuid,
     pub owner_user_id: Uuid,
     pub title: String,

@@ -11,7 +11,7 @@ pub mod photo;
 pub mod album;
 
 #[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
-pub struct ImageEntity {
+pub struct ImageReferenceEntity {
     pub id: Uuid,
     pub url: String,
     pub size: i64,

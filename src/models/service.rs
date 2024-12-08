@@ -6,7 +6,7 @@ use std::fmt;
 
 use image::ImageFormat;
 use sqlx::types::Uuid;
-use crate::models::entity::{ImageEntity, ImageFormatEntity};
+use crate::models::entity::{ImageReferenceEntity, ImageFormatEntity};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Visibility {
@@ -57,8 +57,8 @@ impl Image {
     }
 }
 
-impl From<ImageEntity> for Image {
-    fn from(image_entity: ImageEntity) -> Self {
+impl From<ImageReferenceEntity> for Image {
+    fn from(image_entity: ImageReferenceEntity) -> Self {
         Self {
             id: image_entity.id,
             url: url::Url::parse(&image_entity.url).unwrap(),

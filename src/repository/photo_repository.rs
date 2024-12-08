@@ -3,8 +3,8 @@ use sqlx::{Acquire, PgConnection, query_file_as};
 use sqlx::types::uuid;
 use uuid::Uuid;
 
-use crate::models::entity::{ImageEntity, ImageFormatEntity, VisibilityEntity};
-use crate::models::entity::photo::{PhotoEntity, PhotoImageEntity, PhotoNoImageEntity};
+use crate::models::entity::{ImageFormatEntity, ImageReferenceEntity, VisibilityEntity};
+use crate::models::entity::photo::{PhotoEntity, PhotoImageReferenceEntity, PhotoNoImageReferenceEntity};
 use crate::models::service::photo::CreatePhoto;
 use crate::repository::PostgresDatabase;
 
@@ -25,7 +25,7 @@ impl PhotoRepository for PostgresDatabase {
 
         let mut tx = conn.begin().await?;
 
-        let created_image_entity = Self::insert_image(
+        let created_image_entity = Self::insert_image_reference(
             photo.url(),
             photo.image_id(),
             ImageFormatEntity::from(photo.format()),
@@ -50,7 +50,7 @@ impl PhotoRepository for PostgresDatabase {
             .with_context(|| "Unable to acquire a database connection".to_string())?;
 
         let photo_image_entities: Vec<_> = query_file_as!(
-            PhotoImageEntity, 
+            PhotoImageReferenceEntity, 
             "queries/postgres/find_all_photo.sql",
             limit as i64,
             offset as i64
@@ -66,8 +66,8 @@ impl PhotoRepository for PostgresDatabase {
             .await
             .with_context(|| "Unable to acquire a database connection".to_string())?;
 
-        let photo_image_entity: Option<PhotoImageEntity> = query_file_as!(
-            PhotoImageEntity,
+        let photo_image_entity: Option<PhotoImageReferenceEntity> = query_file_as!(
+            PhotoImageReferenceEntity,
             "queries/postgres/find_photo_by_id.sql",
             id
         ).fetch_optional(&mut *conn)
@@ -78,16 +78,16 @@ impl PhotoRepository for PostgresDatabase {
 }
 
 impl PostgresDatabase {
-    pub async fn insert_image(
+    pub async fn insert_image_reference(
         url: &url::Url,
         image_id: Uuid,
         format: ImageFormatEntity,
         file_size: u64,
         conn: &mut PgConnection,
-    ) -> anyhow::Result<ImageEntity> {
-        let created_image: ImageEntity = query_file_as!(
-            ImageEntity,
-            "queries/postgres/insert_image.sql",
+    ) -> anyhow::Result<ImageReferenceEntity> {
+        let created_image: ImageReferenceEntity = query_file_as!(
+            ImageReferenceEntity,
+            "queries/postgres/insert_image_reference.sql",
             image_id,
             url.to_string(),
             file_size as i64,
@@ -104,7 +104,7 @@ impl PostgresDatabase {
 
     pub async fn insert_photo(
         create_photo: &CreatePhoto,
-        image_entity: &ImageEntity,
+        image_entity: &ImageReferenceEntity,
         conn: &mut PgConnection,
     ) -> anyhow::Result<PhotoEntity> {
         let photo_id = Uuid::new_v4();
@@ -117,8 +117,8 @@ impl PostgresDatabase {
         let album_id = create_photo.album_id().unwrap_or(Uuid::nil());
         let image_id = create_photo.image_id().clone();
 
-        let created_photo_image_entity: PhotoNoImageEntity = query_file_as!(
-            PhotoNoImageEntity,
+        let created_photo_image_entity: PhotoNoImageReferenceEntity = query_file_as!(
+            PhotoNoImageReferenceEntity,
             "queries/postgres/insert_photo.sql",
             photo_id,
             title,
