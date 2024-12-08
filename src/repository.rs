@@ -1,5 +1,6 @@
 pub mod photo_repository;
 pub mod album_repository;
+pub mod image_repository;
 
 use sqlx::pool::PoolConnection;
 use sqlx::PgPool;

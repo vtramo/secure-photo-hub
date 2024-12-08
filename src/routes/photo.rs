@@ -1,7 +1,7 @@
 use actix_multipart::form::MultipartForm;
 use actix_web::{Responder, HttpResponse, web};
 use crate::models::api::UploadPhotoApi;
-use crate::models::service::photo::{UploadImage, UploadPhoto};
+use crate::models::service::photo::{UploadPhoto};
 use crate::PhotoService;
 use crate::security::auth::user::User;
 use crate::setup::AppState;

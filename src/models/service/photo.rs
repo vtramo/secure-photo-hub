@@ -48,8 +48,8 @@ impl Photo {
             created_at
         }
     }
-    pub fn id(&self) -> Uuid {
-        self.id
+    pub fn id(&self) -> &Uuid {
+        &self.id
     }
     pub fn title(&self) -> &str {
         &self.title
@@ -63,11 +63,11 @@ impl Photo {
     pub fn tags(&self) -> &Vec<String> {
         &self.tags
     }
-    pub fn owner_user_id(&self) -> Uuid {
-        self.owner_user_id
+    pub fn owner_user_id(&self) -> &Uuid {
+        &self.owner_user_id
     }
-    pub fn album_id(&self) -> Option<Uuid> {
-        self.album_id
+    pub fn album_id(&self) -> &Option<Uuid> {
+        &self.album_id
     }
     pub fn visibility(&self) -> &Visibility {
         &self.visibility
@@ -128,30 +128,30 @@ impl CreatePhoto {
     }
 
     pub fn new(
-        title: String,
-        description: String,
-        category: String,
-        tags: Vec<String>,
-        owner_user_id: Uuid,
-        image_id: Uuid,
-        album_id: Option<Uuid>,
-        visibility: Visibility,
-        url: url::Url,
+        title: &str,
+        description: &str,
+        category: &str,
+        tags: &Vec<String>,
+        owner_user_id: &Uuid,
+        image_id: &Uuid,
+        album_id: &Option<Uuid>,
+        visibility: &Visibility,
+        url: &url::Url,
         size: u64,
-        format: ImageFormat,
+        format: &ImageFormat,
     ) -> Self {
         Self {
-            title,
-            description,
-            category,
-            tags,
-            owner_user_id,
-            image_id,
-            album_id,
-            visibility,
-            url,
+            title: title.to_string(),
+            description: description.to_string(),
+            category: category.to_string(),
+            tags: tags.iter().cloned().collect(),
+            owner_user_id: owner_user_id.clone(),
+            image_id: image_id.clone(),
+            album_id: album_id.clone(),
+            visibility: visibility.clone(),
+            url: url.clone(),
             size,
-            format,
+            format: format.clone(),
         }
     }
 }
@@ -176,7 +176,7 @@ impl From<PhotoEntity> for Photo {
 #[derive(Debug, Clone)]
 pub struct UploadPhoto {
     title: String,
-    album_id: String,
+    album_id: Option<Uuid>,
     description: String,
     category: String,
     tags: Vec<String>,
@@ -185,14 +185,19 @@ pub struct UploadPhoto {
 }
 
 impl UploadPhoto {
-    pub fn new(title: String, album_id: String, description: String, category: String, tags: Vec<String>, visibility: Visibility, upload_image: UploadImage) -> Self {
+    pub fn new(
+        title: String, 
+        album_id: Option<Uuid>, 
+        description: String, 
+        category: String, 
+        tags: Vec<String>, 
+        visibility: Visibility, 
+        upload_image: UploadImage
+    ) -> Self {
         Self { title, album_id, description, category, tags, visibility, upload_image }
     }
     pub fn title(&self) -> &str {
         &self.title
-    }
-    pub fn album_id(&self) -> &str {
-        &self.album_id
     }
     pub fn description(&self) -> &str {
         &self.description
@@ -208,6 +213,9 @@ impl UploadPhoto {
     }
     pub fn upload_image(&self) -> &UploadImage {
         &self.upload_image
+    }
+    pub fn album_id(&self) -> &Option<Uuid> {
+        &self.album_id
     }
 }
 
@@ -229,6 +237,9 @@ impl UploadImage {
     pub fn size(&self) -> usize {
         self.size
     }
+    pub fn new(bytes: Vec<u8>, format: ImageFormat, size: usize) -> Self {
+        Self { bytes, format, size }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -236,7 +247,8 @@ pub enum UploadImageError {
     MissingContentType,
     BadContentType,
     UnsupportedMimeType,
-    CorruptedImage
+    CorruptedImage,
+    InvalidAlbum
 }
 
 impl TryFrom<TempFile> for UploadImage {

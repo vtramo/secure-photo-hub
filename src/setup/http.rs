@@ -71,7 +71,7 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
             )
             .route(
                 "/photos",
-                web::post().to(routes::photo::post_photos::<service::photo::Service<PostgresDatabase>>)
+                web::post().to(routes::photo::post_photos::<service::photo::Service<PostgresDatabase, aws_sdk_s3::Client>>)
             )
             .service(routes::home)
     })
