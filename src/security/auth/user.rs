@@ -7,13 +7,14 @@ use actix_web::dev::Payload;
 use actix_web::error::ErrorUnauthorized;
 use actix_web::{FromRequest, HttpMessage, HttpRequest};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::security::auth::oauth::{IdTokenClaims, UserInfoResponse};
 use crate::security::auth::USER_SESSION_KEY;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthenticatedUser {
-    id: String,
+    id: Uuid,
     username: String,
     given_name: String,
     family_name: String,
@@ -23,11 +24,8 @@ pub struct AuthenticatedUser {
 }
 
 impl AuthenticatedUser {
-    pub fn full_name(&self) -> &str {
-        &self.full_name
-    }
     pub fn new(
-        id: &str, 
+        id: &Uuid, 
         username: &str, 
         given_name: &str, 
         family_name: &str, 
@@ -36,7 +34,7 @@ impl AuthenticatedUser {
         email_verified: bool
     ) -> Self {
         Self { 
-            id: id.to_string(), 
+            id: id.clone(), 
             username: username.to_string(), 
             given_name: given_name.to_string(), 
             family_name: family_name.to_string(), 
@@ -45,12 +43,33 @@ impl AuthenticatedUser {
             email_verified 
         }
     }
+    pub fn id(&self) -> &Uuid {
+        &self.id
+    }
+    pub fn username(&self) -> &str {
+        &self.username
+    }
+    pub fn given_name(&self) -> &str {
+        &self.given_name
+    }
+    pub fn family_name(&self) -> &str {
+        &self.family_name
+    }
+    pub fn full_name(&self) -> &str {
+        &self.full_name
+    }
+    pub fn email(&self) -> &str {
+        &self.email
+    }
+    pub fn email_verified(&self) -> bool {
+        self.email_verified
+    }
 }
 
 impl From<&IdTokenClaims> for AuthenticatedUser {
     fn from(id_token_claims: &IdTokenClaims) -> Self {
         Self {
-            id: id_token_claims.sub().to_string(),
+            id: Uuid::parse_str(&id_token_claims.sub().to_string()).expect(""),
             username: id_token_claims.preferred_username().to_string(),
             given_name: id_token_claims.given_name().to_string(),
             family_name: id_token_claims.family_name().to_string(),
@@ -64,7 +83,7 @@ impl From<&IdTokenClaims> for AuthenticatedUser {
 impl From<UserInfoResponse> for AuthenticatedUser {
     fn from(value: UserInfoResponse) -> Self {
         Self {
-            id: value.sub().to_string(),
+            id: Uuid::parse_str(&value.sub().to_string()).expect(""),
             username: value.preferred_username().to_string(),
             given_name: value.given_name().to_string(),
             family_name: value.family_name().to_string(),

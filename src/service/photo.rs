@@ -61,24 +61,22 @@ where
 
     async fn create_photo(
         &self, 
-        _authenticated_user: &AuthenticatedUser, 
+        authenticated_user: &AuthenticatedUser, 
         upload_photo: &UploadPhoto
     ) -> anyhow::Result<Photo> {
         let upload_image = upload_photo.upload_image();
-        let created_image_id = self.image_repository.save_image(upload_image.bytes()).await?;
+        let (created_image_id, created_image_url) = self.image_repository.save_image(upload_image.bytes()).await?;
         
-        let owner_user_id = Uuid::new_v4();
-        let image_url = Url::parse("http://localhost:8080/").unwrap();
         let create_photo = CreatePhoto::new(
             upload_photo.title(),
             upload_photo.description(),
             upload_photo.category(),
             upload_photo.tags(),
-            &owner_user_id,
+            authenticated_user.id(),
             &created_image_id,
             upload_photo.album_id(),
             upload_photo.visibility(),
-            &image_url,
+            &created_image_url,
             upload_photo.upload_image().size() as u64,
             &upload_photo.upload_image().format(),
         );
@@ -99,8 +97,8 @@ mod tests {
     struct MockImageRepository;
     #[async_trait::async_trait]
     impl ImageRepository for MockImageRepository {
-        async fn save_image(&self, _bytes: &[u8]) -> anyhow::Result<Uuid> {
-            Ok(Uuid::new_v4())
+        async fn save_image(&self, _bytes: &[u8]) -> anyhow::Result<(Uuid, url::Url)> {
+            Ok((Uuid::new_v4(), Url::parse("https://localhost:8080/").unwrap()))
         }
     }
 
@@ -140,7 +138,7 @@ mod tests {
             image_repository: mock_image_repository
         };
         let authenticated_user = AuthenticatedUser::new(
-            "id_test",
+            &Uuid::new_v4(),
             "username_test",
             "test",
             "test",
