@@ -7,10 +7,10 @@ use actix_web::middleware::{from_fn, Logger};
 use actix_web::{web, App, HttpServer};
 use actix_web::dev::Server;
 use anyhow::Context;
-use aws_sdk_s3::Client;
 
 use crate::setup::Config;
 use crate::{PhotoService, repository, routes, security, service};
+use crate::repository::image_repository::AwsS3Client;
 use crate::repository::PostgresDatabase;
 
 #[derive(Debug, Clone)]
@@ -33,7 +33,7 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
         .context("Failed to connect to Redis for session management")?;
     let oauth_redirect_uri_path = config.oidc_config().redirect_uri().path().to_string();
 
-    let aws_s3_client = Client::new(&config.aws_config);
+    let aws_s3_client = AwsS3Client::new(&config.aws_s3_config);
     let database = repository::PostgresDatabase::connect_with_db_config(&config.database_config).await?;
     let photo_service = service::photo::Service::new(database, aws_s3_client);
     let app_state = AppState { photo_service: Arc::new(photo_service) };
@@ -71,7 +71,7 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
             )
             .route(
                 "/photos",
-                web::post().to(routes::photo::post_photos::<service::photo::Service<PostgresDatabase, aws_sdk_s3::Client>>)
+                web::post().to(routes::photo::post_photos::<service::photo::Service<PostgresDatabase, AwsS3Client>>)
             )
             .service(routes::home)
     })

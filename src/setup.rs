@@ -9,7 +9,7 @@ use yaml_rust2::{Yaml, YamlLoader};
 
 use s3::setup_aws_s3_config;
 
-pub use setup::{oidc::OidcConfig, redis::RedisConfig, database::DatabaseConfig, http::AppState};
+pub use setup::{oidc::OidcConfig, redis::RedisConfig, database::DatabaseConfig, http::AppState, s3::AwsS3Config};
 
 use crate::setup;
 use crate::setup::database::{setup_database_config};
@@ -39,7 +39,7 @@ pub struct Config {
     oidc_config: OidcConfig,
     redis_config: RedisConfig,
     database_config: DatabaseConfig,
-    aws_config: aws_config::SdkConfig,
+    aws_s3_config: AwsS3Config,
     server_port: u16,
 }
 
@@ -81,7 +81,7 @@ async fn setup() -> anyhow::Result<Config> {
 
     let oidc_config = setup_oidc_config(&root_application_properties, &root_vault_secrets).await?;
     let redis_config = setup_redis_config(&root_application_properties)?;
-    let aws_config = setup_aws_s3_config(&root_vault_secrets).await?;
+    let aws_s3_config = setup_aws_s3_config(&root_vault_secrets).await?;
     let server_port = get_server_port(&root_application_properties);
     let database_config = setup_database_config(&application_properties_path, &vault_secrets_path)?;
 
@@ -89,7 +89,7 @@ async fn setup() -> anyhow::Result<Config> {
         oidc_config,
         redis_config,
         database_config,
-        aws_config,
+        aws_s3_config,
         server_port,
     })
 }
