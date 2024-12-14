@@ -39,6 +39,6 @@ chrono = "0.4.38"
 config = "0.14.1"
 async-trait = "0.1.83"
 url = "2.5.2"
-uuid = { version = "1.11.0", features = ["v4"] }
+uuid = { version = "1.11.0", features = ["v4", "serde"] }
 tokio = { version = "1.41.0", features = ["macros"] }
 mime = "0.3.17"
