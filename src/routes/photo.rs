@@ -1,5 +1,6 @@
 use actix_multipart::form::MultipartForm;
 use actix_web::{Responder, HttpResponse, web};
+use uuid::Uuid;
 use crate::models::api::photo::PhotoApi;
 use crate::models::api::photo::UploadPhotoApi;
 use crate::models::service::photo::{UploadPhoto};
@@ -13,7 +14,7 @@ pub async fn post_photos<PS: PhotoService>(
     MultipartForm(upload_photo_api): MultipartForm<UploadPhotoApi>,
     app_state: web::Data<AppState<PS>>,
 ) -> impl Responder {
-    let upload_photo = UploadPhoto::try_from(upload_photo_api).unwrap();
+    let upload_photo = UploadPhoto::try_from(upload_photo_api).unwrap(); // TODO: error handling
 
     let photo = PhotoApi::from(app_state
         .get_ref()
@@ -39,4 +40,19 @@ pub async fn get_photos<PS: PhotoService>(
         .map::<PhotoApi>();
     
     HttpResponse::Ok().json(photos)
+}
+
+pub async fn get_photo_by_id<PS: PhotoService>(
+    authenticated_user: AuthenticatedUser,
+    id: web::Path<Uuid>,
+    app_state: web::Data<AppState<PS>>,
+) -> impl Responder {
+    app_state
+        .get_ref()
+        .photo_service()
+        .get_photo_by_id(&authenticated_user, &id.into_inner())
+        .await
+        .unwrap() // TODO: error handling
+        .map(|photo| HttpResponse::Ok().json(PhotoApi::from(photo)))
+        .unwrap_or(HttpResponse::NotFound().finish())
 }
