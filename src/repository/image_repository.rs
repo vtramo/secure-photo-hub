@@ -17,13 +17,23 @@ pub struct AwsS3Client {
 
 impl AwsS3Client {
     pub fn new(aws_s3config: &AwsS3Config) -> Self {
-        // TODO: fix
-        let endpoint_url = aws_s3config.sdk_config.endpoint_url().unwrap().to_string().strip_prefix("https://").unwrap().to_string();
+        let endpoint_url = Self::strip_https_scheme_prefix(aws_s3config);
         Self {
             aws_sdk_s3: Client::new(&aws_s3config.sdk_config),
             bucket_name: aws_s3config.bucket_name.clone(),
             endpoint_url
         }
+    }
+
+    fn strip_https_scheme_prefix(aws_s3config: &AwsS3Config) -> String {
+        // TODO: fix
+        aws_s3config.sdk_config
+            .endpoint_url()
+            .unwrap()
+            .to_string()
+            .strip_prefix("https://")
+            .unwrap()
+            .to_string()
     }
 
     async fn put_object(&self, key: &str, byte_stream: ByteStream) -> anyhow::Result<()> {

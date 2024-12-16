@@ -75,6 +75,9 @@ impl Photo {
     pub fn image(&self) -> &Image {
         &self.image
     }
+    pub fn created_at(&self) -> chrono::DateTime<Utc> {
+        self.created_at
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

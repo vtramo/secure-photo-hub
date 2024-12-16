@@ -1,6 +1,7 @@
 use actix_multipart::form::MultipartForm;
 use actix_web::{Responder, HttpResponse, web};
-use crate::models::api::UploadPhotoApi;
+use crate::models::api::photo::PhotoApi;
+use crate::models::api::photo::UploadPhotoApi;
 use crate::models::service::photo::{UploadPhoto};
 use crate::PhotoService;
 use crate::security::auth::user::AuthenticatedUser;
@@ -14,12 +15,12 @@ pub async fn post_photos<PS: PhotoService>(
 ) -> impl Responder {
     let upload_photo = UploadPhoto::try_from(upload_photo_api).unwrap();
 
-    let photo = app_state
+    let photo = PhotoApi::from(app_state
         .get_ref()
         .photo_service()
         .create_photo(&authenticated_user, &upload_photo)
         .await
-        .unwrap();
+        .unwrap()); // TODO: error handling
 
-    HttpResponse::Created().json(photo.title())
+    HttpResponse::Created().json(photo)
 }
