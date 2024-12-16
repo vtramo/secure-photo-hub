@@ -24,3 +24,19 @@ pub async fn post_photos<PS: PhotoService>(
 
     HttpResponse::Created().json(photo)
 }
+
+pub async fn get_photos<PS: PhotoService>(
+    authenticated_user: AuthenticatedUser,
+    app_state: web::Data<AppState<PS>>,
+) -> impl Responder {
+
+    let photos = app_state
+        .get_ref()
+        .photo_service()
+        .get_all_photos(&authenticated_user)
+        .await
+        .unwrap() // TODO: error handling
+        .map::<PhotoApi>();
+    
+    HttpResponse::Ok().json(photos)
+}

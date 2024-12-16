@@ -10,7 +10,7 @@ use crate::models::api::VisibilityApi;
 use crate::models::service::photo::{Photo, UploadImage, UploadImageError, UploadPhoto};
 use crate::models::service::Visibility;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PhotoApi {
     #[serde(rename = "id")]
     pub id: Uuid, 

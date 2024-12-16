@@ -73,6 +73,10 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
                 "/photos",
                 web::post().to(routes::photo::post_photos::<service::photo::Service<PostgresDatabase, AwsS3Client>>)
             )
+            .route(
+                "/photos",
+                web::get().to(routes::photo::get_photos::<service::photo::Service<PostgresDatabase, AwsS3Client>>)
+            )
             .service(routes::home)
     })
         .bind(("0.0.0.0", server_port))?
