@@ -1,13 +1,14 @@
 use actix_multipart::form::MultipartForm;
-use actix_web::{Responder, HttpResponse, web};
+use actix_web::{HttpResponse, Responder, web};
+use futures_util::FutureExt;
 use uuid::Uuid;
-use crate::models::api::photo::PhotoApi;
+
+use crate::models::api::photo::{PatchPhotoApi, PhotoApi};
 use crate::models::api::photo::UploadPhotoApi;
-use crate::models::service::photo::{UploadPhoto};
+use crate::models::service::photo::{UpdatePhoto, UploadPhoto};
 use crate::PhotoService;
 use crate::security::auth::user::AuthenticatedUser;
 use crate::setup::AppState;
-
 
 pub async fn post_photos<PS: PhotoService>(
     authenticated_user: AuthenticatedUser,
@@ -55,4 +56,19 @@ pub async fn get_photo_by_id<PS: PhotoService>(
         .unwrap() // TODO: error handling
         .map(|photo| HttpResponse::Ok().json(PhotoApi::from(photo)))
         .unwrap_or(HttpResponse::NotFound().finish())
+}
+
+pub async fn patch_photo<PS: PhotoService>(
+    authenticated_user: AuthenticatedUser,
+    photo_id: web::Path<Uuid>,
+    patch_photo_api: web::Json<PatchPhotoApi>,
+    app_state: web::Data<AppState<PS>>,
+) -> impl Responder {
+    app_state
+        .get_ref()
+        .photo_service()
+        .update_photo(&authenticated_user, &UpdatePhoto::from(photo_id.into_inner(), patch_photo_api.into_inner()))
+        .await
+        .map(|photo| HttpResponse::Ok().json(PhotoApi::from(photo)))
+        .unwrap_or(HttpResponse::NotFound().finish()) // TODO: error handling
 }

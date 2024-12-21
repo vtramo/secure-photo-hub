@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::models::entity::{ImageFormatEntity, ImageReferenceEntity, VisibilityEntity};
 use crate::models::entity::photo::{PhotoEntity, PhotoImageReferenceEntity, PhotoNoImageReferenceEntity};
-use crate::models::service::photo::CreatePhoto;
+use crate::models::service::photo::{CreatePhoto, UpdatePhoto};
 use crate::repository::PostgresDatabase;
 
 #[async_trait::async_trait]
@@ -13,7 +13,10 @@ pub trait PhotoRepository: Clone + Send + Sync + 'static {
     async fn create_photo(&self, photo: &CreatePhoto) -> anyhow::Result<PhotoEntity>;
     async fn find_all_photos(&self, limit: u32, offset: u32) -> anyhow::Result<Vec<PhotoEntity>>;
     async fn find_photo_by_id(&self, id: &Uuid) -> anyhow::Result<Option<PhotoEntity>>;
+    async fn update_photo(&self, photo: &UpdatePhoto) -> anyhow::Result<PhotoEntity>;
 }
+
+const NULL: &'static str = "NULL";
 
 #[async_trait::async_trait]
 impl PhotoRepository for PostgresDatabase {
@@ -74,6 +77,31 @@ impl PhotoRepository for PostgresDatabase {
         .await?;
 
         Ok(photo_image_entity.map(PhotoEntity::from))
+    }
+
+    async fn update_photo(&self, update_photo: &UpdatePhoto) -> anyhow::Result<PhotoEntity> {
+        let mut conn = self.acquire()
+            .await
+            .with_context(|| "Unable to acquire a database connection".to_string())?;
+        
+        let photo_id = dbg!(update_photo.id());
+        let album_id = update_photo.album_id().clone().unwrap_or(Uuid::nil());
+        let title = update_photo.title().clone().unwrap_or(String::from(NULL));
+        
+        let updated_photo_entity: PhotoImageReferenceEntity = query_file_as!(
+            PhotoImageReferenceEntity,
+            "queries/postgres/update_photo.sql",
+            photo_id,
+            album_id,
+            title,
+        ).fetch_all(&mut *conn)
+            .await.map_err(|err| anyhow!("Unable to update a photo {}", err))?
+            .get(0)
+            .cloned()
+            .take()
+            .ok_or(anyhow!("Unable to update a photo"))?;
+        
+        Ok(PhotoEntity::from(updated_photo_entity))
     }
 }
 
@@ -158,7 +186,7 @@ mod tests {
     use url::Url;
     use uuid::Uuid;
 
-    use crate::models::service::photo::CreatePhoto;
+    use crate::models::service::photo::{CreatePhoto, UpdatePhoto};
     use crate::models::service::Visibility;
     use crate::repository::photo_repository::PhotoRepository;
     use crate::repository::PostgresDatabase;
@@ -237,6 +265,43 @@ mod tests {
         let photo = photo.unwrap();
         assert_eq!(created_photo.id, photo.id);
         assert_eq!(created_photo.image.id, photo.image.id);
+    }
+    
+    #[actix_web::test(flavor = "multi_thread", worker_threads = 1)]
+    async fn update_photo() {
+        let env: &'static str = env!("DATABASE_URL");
+        let pg = PostgresDatabase::connect(env).await.unwrap();
+
+        let owner_user_id = Uuid::new_v4();
+        let image_id = Uuid::new_v4();
+        let image_url = Url::parse("http://localhost:8080/").unwrap();
+        let album_id = uuid::Uuid::new_v4();
+        let create_photo = CreatePhoto::new(
+            "title",
+            "description",
+            "category",
+            &vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
+            &owner_user_id,
+            &image_id,
+            &Some(album_id),
+            &Visibility::Private,
+            &image_url,
+            1024,
+            &ImageFormat::Png,
+        );
+
+        let created_photo = pg.create_photo(&create_photo).await.unwrap();
+        assert_eq!(image_id, created_photo.image.id);
+
+        let new_title = "new_title".to_string();
+        let update_photo = UpdatePhoto::new(
+            &created_photo.id,
+            Some(&new_title),
+            None,
+        );
+        let updated_photo = pg.update_photo(&update_photo).await.unwrap();
+        assert_eq!(&updated_photo.id, &created_photo.id);
+        assert_eq!(updated_photo.title, new_title);
     }
     
 }

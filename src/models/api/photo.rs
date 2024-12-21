@@ -7,7 +7,7 @@ use actix_multipart::form::tempfile::TempFile;
 use actix_multipart::form::json::Json as MpJson;
 use crate::models;
 use crate::models::api::VisibilityApi;
-use crate::models::service::photo::{Photo, UploadImage, UploadImageError, UploadPhoto};
+use crate::models::service::photo::{Photo, UpdatePhoto, UploadImage, UploadImageError, UploadPhoto};
 use crate::models::service::Visibility;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -127,5 +127,22 @@ impl TryFrom<UploadPhotoApi> for UploadPhoto {
             Visibility::from(metadata.0.visibility),
             upload_image,
         ))
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct PatchPhotoApi {
+    pub title: Option<String>,
+    #[serde(rename = "albumId")]
+    pub album_id: Option<Uuid>,
+}
+
+impl UpdatePhoto {
+    pub fn from(photo_id: Uuid, patch_photo_api: PatchPhotoApi) -> Self {
+        Self::new(
+            &photo_id,
+            patch_photo_api.title.as_ref(),
+            patch_photo_api.album_id.as_ref(),
+        )
     }
 }

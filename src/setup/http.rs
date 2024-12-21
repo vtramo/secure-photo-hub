@@ -71,15 +71,19 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
             )
             .route(
                 "/photos",
-                web::post().to(routes::photo::post_photos::<service::photo::Service<PostgresDatabase, AwsS3Client>>)
+                web::post().to(routes::photo::post_photos::<service::photo::Service<PostgresDatabase, AwsS3Client>>),
             )
             .route(
                 "/photos",
-                web::get().to(routes::photo::get_photos::<service::photo::Service<PostgresDatabase, AwsS3Client>>)
+                web::get().to(routes::photo::get_photos::<service::photo::Service<PostgresDatabase, AwsS3Client>>),
             )
             .route(
                 "/photos/{id}",
-                web::get().to(routes::photo::get_photo_by_id::<service::photo::Service<PostgresDatabase, AwsS3Client>>)
+                web::get().to(routes::photo::get_photo_by_id::<service::photo::Service<PostgresDatabase, AwsS3Client>>),
+            )
+            .route(
+                "/photos/{id}",
+                web::patch().to(routes::photo::patch_photo::<service::photo::Service<PostgresDatabase, AwsS3Client>>),
             )
             .service(routes::home)
     })

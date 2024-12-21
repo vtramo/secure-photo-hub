@@ -81,6 +81,28 @@ impl Photo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UpdatePhoto {
+    id: Uuid,
+    title: Option<String>,
+    album_id: Option<Uuid>
+}
+
+impl UpdatePhoto {
+    pub fn new(id: &Uuid, title: Option<&String>, album_id: Option<&Uuid>) -> Self {
+        Self { id: id.clone(), title: title.cloned(), album_id: album_id.cloned() }
+    }
+    pub fn id(&self) -> &Uuid {
+        &self.id
+    }
+    pub fn title(&self) -> &Option<String> {
+        &self.title
+    }
+    pub fn album_id(&self) -> &Option<Uuid> {
+        &self.album_id
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreatePhoto {
     title: String,
     description: String,
