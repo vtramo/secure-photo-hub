@@ -246,22 +246,10 @@ components:
         description:
           type: string
           description: Description of the album
-        category:
-          type: string
-          description: Category of the album
-          readOnly: true
-        tags:
-          type: string
-          description: Tags associated with the album (comma-separated list)
-          readOnly: true
         visibility:
           description: Visibility status of the album (e.g., public, private)
           allOf:
             - $ref: "#/components/schemas/Visibility"
-        totPhotos:
-          type: integer
-          description: Total number of photos in the album
-          readOnly: true
         createdAt:
           type: string
           format: date-time

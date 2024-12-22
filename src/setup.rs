@@ -9,7 +9,13 @@ use yaml_rust2::{Yaml, YamlLoader};
 
 use s3::setup_aws_s3_config;
 
-pub use setup::{oidc::OidcConfig, redis::RedisConfig, database::DatabaseConfig, http::AppState, s3::AwsS3Config};
+pub use setup::{
+    oidc::OidcConfig, 
+    redis::RedisConfig, 
+    database::DatabaseConfig, 
+    http::PhotoRoutesState, 
+    http::AlbumRoutesState, 
+    s3::AwsS3Config};
 
 use crate::setup;
 use crate::setup::database::{setup_database_config};

@@ -1,29 +1,31 @@
+use std::sync::Arc;
 use futures_util::FutureExt;
 use url::Url;
 use uuid::Uuid;
 use crate::models::service::pagination::Page;
 use crate::models::service::photo::{CreatePhoto, Photo, UpdatePhoto, UploadPhoto};
 use crate::models::service::Visibility;
-use crate::PhotoService;
+use crate::service::PhotoService;
 use crate::repository::image_repository::ImageRepository;
 use crate::repository::photo_repository::PhotoRepository;
 use crate::security::auth::user::AuthenticatedUser;
 
 #[derive(Debug, Clone)]
-pub struct Service<R, I>
-    where
-        R: PhotoRepository
-{
-    photo_repository: R,
-    image_repository: I,
-}
-
-impl<R, I> Service<R, I>
+pub struct PhotoServiceImpl<R, I>
     where
         R: PhotoRepository,
         I: ImageRepository,
 {
-    pub fn new(photo_repository: R, image_repository: I) -> Self {
+    photo_repository: Arc<R>,
+    image_repository: Arc<I>,
+}
+
+impl<R, I> PhotoServiceImpl<R, I>
+    where
+        R: PhotoRepository,
+        I: ImageRepository,
+{
+    pub fn new(photo_repository: Arc<R>, image_repository: Arc<I>) -> Self {
         Self {
             photo_repository,
             image_repository,
@@ -32,7 +34,7 @@ impl<R, I> Service<R, I>
 }
 
 #[async_trait::async_trait]
-impl<R, I> PhotoService for Service<R, I>
+impl<R, I> PhotoService for PhotoServiceImpl<R, I>
     where
         R: PhotoRepository,
         I: ImageRepository,
@@ -78,8 +80,8 @@ impl<R, I> PhotoService for Service<R, I>
             upload_photo.album_id(),
             upload_photo.visibility(),
             &created_image_url,
-            upload_photo.upload_image().size() as u64,
-            &upload_photo.upload_image().format(),
+            upload_image.size() as u64,
+            &upload_image.format(),
         );
 
         self.photo_repository.create_photo(&create_photo).await.map(Photo::from)
@@ -102,7 +104,7 @@ mod tests {
     use actix_web::web::service;
     use image::ImageFormat;
 
-    use crate::models::service::photo::UploadImage;
+    use crate::models::service::UploadImage;
     use crate::repository::PostgresDatabase;
 
     use super::*;
@@ -146,11 +148,11 @@ mod tests {
 
     async fn fixtures() -> (impl PhotoService, AuthenticatedUser) {
         let db_url: &'static str = env!("DATABASE_URL");
-        let pg = PostgresDatabase::connect(db_url).await.unwrap();
-        let mock_image_repository = MockImageRepository {};
-        let service = Service {
-            photo_repository: pg,
-            image_repository: mock_image_repository,
+        let pg = Arc::new(PostgresDatabase::connect(db_url).await.unwrap());
+        let mock_image_repository = Arc::new(MockImageRepository {});
+        let service = PhotoServiceImpl {
+            photo_repository: pg.clone(),
+            image_repository: mock_image_repository.clone(),
         };
         let authenticated_user = AuthenticatedUser::new(
             &Uuid::new_v4(),

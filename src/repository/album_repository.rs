@@ -1,17 +1,15 @@
 use anyhow::Context;
 use sqlx::{Acquire, PgConnection, query_file, query_file_as};
-use sqlx::postgres::PgQueryResult;
 use uuid::Uuid;
 
 use crate::models::entity::{ImageFormatEntity, ImageReferenceEntity, VisibilityEntity};
 use crate::models::entity::album::{AlbumCoverImageReferenceEntity, AlbumEntity, AlbumNoCoverImageReferenceEntity};
 use crate::models::service::album::CreateAlbum;
-use crate::repository::PostgresDatabase;
+use crate::repository::{NULL, PostgresDatabase};
 
 #[async_trait::async_trait]
 pub trait AlbumRepository: Clone + Send + Sync + 'static {
     async fn create_album(&self, album: &CreateAlbum) -> anyhow::Result<AlbumEntity>;
-    async fn move_photo_to_album(&self, photo_id: &Uuid, album_id: &Uuid) -> anyhow::Result<bool>;
     async fn find_all_albums(&self) -> anyhow::Result<Vec<AlbumEntity>>;
     async fn find_album_by_id(&self, id: &Uuid) -> anyhow::Result<Option<AlbumEntity>>;
 }
@@ -43,22 +41,6 @@ impl AlbumRepository for PostgresDatabase {
         tx.commit().await?;
 
         Ok(created_album_entity)
-    }
-
-    async fn move_photo_to_album(&self, photo_id: &Uuid, album_id: &Uuid) -> anyhow::Result<bool> {
-        let mut conn = self
-            .acquire()
-            .await
-            .with_context(|| "Unable to acquire a database connection".to_string())?;
-
-        let result: PgQueryResult = query_file!(
-            "queries/postgres/move_photo_to_album.sql",
-            photo_id,
-            album_id
-        ).execute(&mut *conn)
-            .await?;
-
-        Ok(result.rows_affected() == 1)
     }
 
     async fn find_all_albums(&self) -> anyhow::Result<Vec<AlbumEntity>> {
@@ -138,7 +120,7 @@ mod tests {
     use url::Url;
     use uuid::Uuid;
 
-    use crate::models::service::photo::CreatePhoto;
+    use crate::models::service::photo::{CreatePhoto, UpdatePhoto};
     use crate::models::service::Visibility;
     use crate::repository::photo_repository::PhotoRepository;
 
@@ -146,7 +128,7 @@ mod tests {
 
     #[actix_web::test(flavor = "multi_thread", worker_threads = 1)]
     async fn should_return_album_with_correct_details_after_creation() {
-        let env: &'static str = env!("DATABASE_URL");
+        let env: &'static str = env!("DATABASE_URL"); // TODO: fixtures
         let pg = PostgresDatabase::connect(env).await.unwrap();
 
         let owner_user_id = Uuid::new_v4();
@@ -221,10 +203,9 @@ mod tests {
         assert_eq!(created_album.owner_user_id, owner_user_id);
 
         let album_id = created_album.id;
-        let move_result = pg.move_photo_to_album(&created_photo.id, &album_id).await.unwrap();
-        assert!(move_result);
-        let updated_photo = pg.find_photo_by_id(&created_photo.id).await.unwrap().unwrap();
-        assert_eq!(updated_photo.album_id, Some(album_id));
+        let update_photo = UpdatePhoto::new(&created_photo.id, None, Some(&album_id));
+        let moved_photo = pg.update_photo(&update_photo).await.unwrap();
+        assert_eq!(moved_photo.album_id, Some(album_id));
     }
 
     #[actix_web::test(flavor = "multi_thread", worker_threads = 1)]

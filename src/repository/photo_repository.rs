@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::models::entity::{ImageFormatEntity, ImageReferenceEntity, VisibilityEntity};
 use crate::models::entity::photo::{PhotoEntity, PhotoImageReferenceEntity, PhotoNoImageReferenceEntity};
 use crate::models::service::photo::{CreatePhoto, UpdatePhoto};
-use crate::repository::PostgresDatabase;
+use crate::repository::{NULL, PostgresDatabase};
 
 #[async_trait::async_trait]
 pub trait PhotoRepository: Clone + Send + Sync + 'static {
@@ -15,8 +15,6 @@ pub trait PhotoRepository: Clone + Send + Sync + 'static {
     async fn find_photo_by_id(&self, id: &Uuid) -> anyhow::Result<Option<PhotoEntity>>;
     async fn update_photo(&self, photo: &UpdatePhoto) -> anyhow::Result<PhotoEntity>;
 }
-
-const NULL: &'static str = "NULL";
 
 #[async_trait::async_trait]
 impl PhotoRepository for PostgresDatabase {
@@ -84,7 +82,7 @@ impl PhotoRepository for PostgresDatabase {
             .await
             .with_context(|| "Unable to acquire a database connection".to_string())?;
         
-        let photo_id = dbg!(update_photo.id());
+        let photo_id = update_photo.id();
         let album_id = update_photo.album_id().clone().unwrap_or(Uuid::nil());
         let title = update_photo.title().clone().unwrap_or(String::from(NULL));
         

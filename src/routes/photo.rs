@@ -6,14 +6,14 @@ use uuid::Uuid;
 use crate::models::api::photo::{PatchPhotoApi, PhotoApi};
 use crate::models::api::photo::UploadPhotoApi;
 use crate::models::service::photo::{UpdatePhoto, UploadPhoto};
-use crate::PhotoService;
+use crate::service::PhotoService;
 use crate::security::auth::user::AuthenticatedUser;
-use crate::setup::AppState;
+use crate::setup::PhotoRoutesState;
 
 pub async fn post_photos<PS: PhotoService>(
     authenticated_user: AuthenticatedUser,
     MultipartForm(upload_photo_api): MultipartForm<UploadPhotoApi>,
-    app_state: web::Data<AppState<PS>>,
+    app_state: web::Data<PhotoRoutesState<PS>>,
 ) -> impl Responder {
     let upload_photo = UploadPhoto::try_from(upload_photo_api).unwrap(); // TODO: error handling
 
@@ -29,7 +29,7 @@ pub async fn post_photos<PS: PhotoService>(
 
 pub async fn get_photos<PS: PhotoService>(
     authenticated_user: AuthenticatedUser,
-    app_state: web::Data<AppState<PS>>,
+    app_state: web::Data<PhotoRoutesState<PS>>,
 ) -> impl Responder {
 
     let photos = app_state
@@ -46,7 +46,7 @@ pub async fn get_photos<PS: PhotoService>(
 pub async fn get_photo_by_id<PS: PhotoService>(
     authenticated_user: AuthenticatedUser,
     id: web::Path<Uuid>,
-    app_state: web::Data<AppState<PS>>,
+    app_state: web::Data<PhotoRoutesState<PS>>,
 ) -> impl Responder {
     app_state
         .get_ref()
@@ -62,7 +62,7 @@ pub async fn patch_photo<PS: PhotoService>(
     authenticated_user: AuthenticatedUser,
     photo_id: web::Path<Uuid>,
     patch_photo_api: web::Json<PatchPhotoApi>,
-    app_state: web::Data<AppState<PS>>,
+    app_state: web::Data<PhotoRoutesState<PS>>,
 ) -> impl Responder {
     app_state
         .get_ref()

@@ -37,3 +37,5 @@ impl PostgresDatabase {
         )
     }
 }
+
+const NULL: &'static str = "NULL";

@@ -7,13 +7,12 @@ use actix_multipart::form::tempfile::TempFile;
 use actix_multipart::form::json::Json as MpJson;
 use crate::models;
 use crate::models::api::VisibilityApi;
-use crate::models::service::photo::{Photo, UpdatePhoto, UploadImage, UploadImageError, UploadPhoto};
-use crate::models::service::Visibility;
+use crate::models::service::photo::{Photo, UpdatePhoto, UploadPhoto};
+use crate::models::service::{UploadImage, UploadImageError, Visibility};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PhotoApi {
-    #[serde(rename = "id")]
-    pub id: Uuid, 
+    pub id: Uuid,
     #[serde(rename = "albumId")]
     pub album_id: Option<Uuid>,
     pub title: String,
@@ -21,11 +20,11 @@ pub struct PhotoApi {
     pub category: String,
     pub tags: String,
     pub visibility: VisibilityApi,
-    #[serde(rename = "createdAt", with = "serde_date")]
+    #[serde(rename = "createdAt", with = "crate::models::api::serde_date")]
     pub created_at: DateTime<Utc>,
     #[serde(rename = "imageId")]
     pub image_id: Uuid,
-    #[serde(rename = "imageUrl", with = "serde_url")]
+    #[serde(rename = "imageUrl", with = "crate::models::api::serde_url")]
     pub image_url: Url,
 }
 
@@ -43,48 +42,6 @@ impl From<Photo> for PhotoApi {
             image_id: photo.image().id().clone(),
             image_url: photo.image().url().clone(),
         }
-    }
-}
-
-mod serde_date {
-    use chrono::{DateTime, Utc};
-    use serde::{self, Deserialize, Deserializer, Serializer};
-
-    pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-    {
-        serializer.serialize_str(&dt.to_rfc3339())
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
-        where
-            D: Deserializer<'de>,
-    {
-        let s: String = Deserialize::deserialize(deserializer)?;
-        DateTime::parse_from_rfc3339(&s)
-            .map(|dt| dt.with_timezone(&Utc))
-            .map_err(serde::de::Error::custom)
-    }
-}
-
-mod serde_url {
-    use serde::{self, Deserialize, Deserializer, Serializer};
-    use url::Url;
-
-    pub fn serialize<S>(url: &Url, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-    {
-        serializer.serialize_str(url.as_str())
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Url, D::Error>
-        where
-            D: Deserializer<'de>,
-    {
-        let s: String = Deserialize::deserialize(deserializer)?;
-        Url::parse(&s).map_err(serde::de::Error::custom)
     }
 }
 
@@ -108,16 +65,16 @@ pub struct UploadPhotoMetadataApi {
 }
 
 impl TryFrom<UploadPhotoApi> for UploadPhoto {
-    type Error = models::service::photo::UploadImageError;
+    type Error = crate::models::service::UploadImageError;
 
     fn try_from(upload_photo_api: UploadPhotoApi) -> Result<Self, Self::Error> {
         let UploadPhotoApi { file: image, metadata } = upload_photo_api;
         let upload_image = UploadImage::try_from(image)?;
         let album_id = metadata.0.album_id
             .map(|uuid_str| Uuid::parse_str(&uuid_str))
-            .transpose() 
+            .transpose()
             .map_err(|_| UploadImageError::InvalidAlbum)?;
-        
+
         Ok(Self::new(
             metadata.0.title,
             album_id,

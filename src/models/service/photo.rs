@@ -1,12 +1,9 @@
-use std::io::Read;
-
-use actix_multipart::form::tempfile::TempFile;
 use chrono::Utc;
 use image::ImageFormat;
 use uuid::Uuid;
 
 use crate::models::entity::photo::PhotoEntity;
-use crate::models::service::{Image, Visibility};
+use crate::models::service::{Image, UploadImage, Visibility};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Photo {
@@ -241,67 +238,5 @@ impl UploadPhoto {
     }
     pub fn album_id(&self) -> &Option<Uuid> {
         &self.album_id
-    }
-}
-
-
-#[derive(Debug, Clone)]
-pub struct UploadImage {
-    bytes: Vec<u8>,
-    format: ImageFormat,
-    size: usize,
-}
-
-impl UploadImage {
-    pub fn bytes(&self) -> &Vec<u8> {
-        &self.bytes
-    }
-    pub fn format(&self) -> ImageFormat {
-        self.format
-    }
-    pub fn size(&self) -> usize {
-        self.size
-    }
-    pub fn new(bytes: Vec<u8>, format: ImageFormat, size: usize) -> Self {
-        Self { bytes, format, size }
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum UploadImageError {
-    MissingContentType,
-    BadContentType,
-    UnsupportedMimeType,
-    CorruptedImage,
-    InvalidAlbum
-}
-
-impl TryFrom<TempFile> for UploadImage {
-    type Error = UploadImageError;
-
-    fn try_from(mut temp_file: TempFile) -> Result<Self, Self::Error> {
-        match temp_file.content_type {
-            None => Err(UploadImageError::MissingContentType),
-            Some(content_type) => match content_type.type_() {
-                mime::IMAGE => {
-                    let format = match content_type.subtype() {
-                        mime::JPEG => ImageFormat::Jpeg,
-                        mime::PNG => ImageFormat::Png,
-                        mime::GIF => ImageFormat::Gif,
-                        _ => return Err(UploadImageError::UnsupportedMimeType),
-                    };
-
-                    let size = temp_file.size;
-                    let mut bytes = Vec::with_capacity(size);
-                    temp_file.file.read_to_end(&mut bytes).map_err(|_| UploadImageError::CorruptedImage)?;
-                    Ok(Self {
-                        bytes,
-                        format,
-                        size,
-                    })
-                },
-                _ => Err(UploadImageError::BadContentType)
-            }
-        }
     }
 }

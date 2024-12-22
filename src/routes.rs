@@ -4,6 +4,7 @@ use crate::security;
 
 pub mod health_check;
 pub mod photo;
+pub mod album;
 
 
 #[get("/")]
