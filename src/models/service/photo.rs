@@ -191,7 +191,7 @@ impl From<PhotoEntity> for Photo {
             album_id: photo_entity.album_id,
             visibility: Visibility::from(photo_entity.visibility),
             image: ImageReference::from(photo_entity.image),
-            created_at: Default::default(),
+            created_at: photo_entity.created_at,
         }
     }
 }

@@ -1,13 +1,15 @@
+use anyhow::Context;
 use uuid::Uuid;
 use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::Client;
 use image::ImageFormat;
-use crate::models::service::image::Image;
+use serde::{Deserialize, Serialize};
+use crate::models::service::image::{Image, UploadImage};
 use crate::setup::AwsS3Config;
 
 #[async_trait::async_trait]
 pub trait ImageStorage: Clone + Send + Sync + 'static {
-    async fn upload_image(&self, bytes: &[u8]) -> anyhow::Result<(Uuid, url::Url)>;
+    async fn upload_image(&self, upload_image: &UploadImage) -> anyhow::Result<(Uuid, url::Url)>;
     async fn download_image(&self, id: &Uuid) -> anyhow::Result<Option<Image>>;
 }
 
@@ -20,12 +22,9 @@ pub struct AwsS3Client {
 
 #[async_trait::async_trait]
 impl ImageStorage for AwsS3Client {
-    async fn upload_image(&self, bytes: &[u8]) -> anyhow::Result<(Uuid, url::Url)> {
-        let image_id = Uuid::new_v4();
-        let image_id_string = image_id.to_string();
-
-        self.put_object(&image_id_string, ByteStream::from(bytes.to_vec())).await?;
-        let resource_url = self.build_resource_url(&image_id_string);
+    async fn upload_image(&self, upload_image: &UploadImage) -> anyhow::Result<(Uuid, url::Url)> {
+        let image_id = self.put_object_image(upload_image).await?;
+        let resource_url = self.build_resource_url(&image_id);
 
         Ok((image_id, resource_url))
     }
@@ -36,16 +35,32 @@ impl ImageStorage for AwsS3Client {
             .bucket(&self.bucket_name)
             .key(id.to_string())
             .send()
-            .await?;
+            .await
+            .context("Failed to download image from S3")?; // TODO: error handling
 
-        dbg!(&object);
+        let metadata = object.metadata
+            .as_ref()
+            .and_then(|metadata| metadata.get(Self::IMAGE_METADATA_KEY))
+            .ok_or_else(|| anyhow::anyhow!("Image metadata not found for key: {}", Self::IMAGE_METADATA_KEY))?;  // TODO: error handling
+
+        let image_metadata: ImageMetadata = serde_json::from_str(metadata)
+            .context("Failed to deserialize image metadata")?; // TODO: error handling
+
         let bytes = object.body.collect().await?.into_bytes().to_vec();
-        let size = bytes.len() as u32;
-        Ok(Some(Image::new(id, &ImageFormat::Jpeg, bytes, size)))
+
+        Ok(Some(Image::new(
+            id,
+            &image_metadata.filename,
+            &image_metadata.format,
+            bytes,
+            image_metadata.size as u32,
+        )))
     }
 }
 
 impl AwsS3Client {
+    const IMAGE_METADATA_KEY: &'static str = "image_metadata";
+
     pub fn new(aws_s3config: &AwsS3Config) -> Self {
         let endpoint_url = Self::strip_https_scheme_prefix(aws_s3config);
         Self {
@@ -66,22 +81,46 @@ impl AwsS3Client {
             .to_string()
     }
 
-    async fn put_object(&self, key: &str, byte_stream: ByteStream) -> anyhow::Result<()> {
+    async fn put_object_image(&self, upload_image: &UploadImage) -> anyhow::Result<Uuid> {
+        let image_id = Uuid::new_v4();
+        let key = image_id.to_string();
+        let image_metadata = serde_json::to_string(&ImageMetadata::from(upload_image))?;
+
         self.aws_sdk_s3
             .put_object()
             .bucket(&self.bucket_name)
-            .key(key)
-            .body(byte_stream)
+            .key(&key)
+            .body(ByteStream::from(upload_image.bytes().to_vec()))
+            .metadata(Self::IMAGE_METADATA_KEY, image_metadata)
             .send()
             .await
             .map(|_| ())
             .map_err(|e| anyhow::anyhow!(
                 "Failed to upload object with key '{}' to bucket '{}': {:?}",
                 key, self.bucket_name, e
-            ))
+            ))?;
+
+        Ok(image_id)
     }
 
-    fn build_resource_url(&self, key: &str) -> url::Url {
+    fn build_resource_url(&self, key: &Uuid) -> url::Url {
         url::Url::parse(&format!("https://{}.{}/{}", self.bucket_name, self.endpoint_url, key)).unwrap()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ImageMetadata {
+    pub filename: String,
+    pub format: ImageFormat,
+    pub size: usize,
+}
+
+impl From<&UploadImage> for ImageMetadata {
+    fn from(upload_image: &UploadImage) -> Self {
+        Self {
+            filename: upload_image.filename().to_string(),
+            format: upload_image.format(),
+            size: upload_image.size(),
+        }
     }
 }

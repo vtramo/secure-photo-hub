@@ -69,6 +69,7 @@ impl From<ImageFormatEntity> for ImageFormat {
 
 #[derive(Debug, Clone)]
 pub struct UploadImage {
+    filename: String,
     bytes: Vec<u8>,
     format: ImageFormat,
     size: usize,
@@ -84,8 +85,11 @@ impl UploadImage {
     pub fn size(&self) -> usize {
         self.size
     }
-    pub fn new(bytes: Vec<u8>, format: ImageFormat, size: usize) -> Self {
-        Self { bytes, format, size }
+    pub fn new(filename: &str, bytes: Vec<u8>, format: ImageFormat, size: usize) -> Self {
+        Self { filename: filename.to_string(), bytes, format, size }
+    }
+    pub fn filename(&self) -> &str {
+        &self.filename
     }
 }
 
@@ -104,10 +108,12 @@ impl TryFrom<TempFile> for UploadImage {
                         _ => return Err(UploadImageError::UnsupportedMimeType),
                     };
 
+                    let file_name = temp_file.file_name.unwrap_or_default();
                     let size = temp_file.size;
                     let mut bytes = Vec::with_capacity(size);
                     temp_file.file.read_to_end(&mut bytes).map_err(|_| UploadImageError::CorruptedImage)?;
                     Ok(Self {
+                        filename: file_name,
                         bytes,
                         format,
                         size,
@@ -131,14 +137,15 @@ pub enum UploadImageError {
 #[derive(Debug, Clone)]
 pub struct Image {
     id: Uuid,
+    filename: String,
     format: ImageFormat,
     bytes: Vec<u8>,
     size: u32,
 }
 
 impl Image {
-    pub fn new(id: &Uuid, format: &ImageFormat, bytes: Vec<u8>, size: u32) -> Self {
-        Self { id: id.clone(), format: format.clone(), bytes, size }
+    pub fn new(id: &Uuid, filename: &str, format: &ImageFormat, bytes: Vec<u8>, size: u32) -> Self {
+        Self { id: id.clone(), filename: filename.to_string(), format: format.clone(), bytes, size }
     }
     pub fn id(&self) -> Uuid {
         self.id
@@ -154,6 +161,9 @@ impl Image {
     }
     pub fn take_bytes(self) -> Vec<u8> {
         self.bytes
+    }
+    pub fn filename(&self) -> &str {
+        &self.filename
     }
 }
 

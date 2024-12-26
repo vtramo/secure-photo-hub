@@ -61,7 +61,7 @@ impl<R, I> AlbumService for AlbumServiceImpl<R, I>
         create_album_with_cover: &CreateAlbumWithCover
     ) -> anyhow::Result<Album> {
         let upload_cover_image = create_album_with_cover.upload_image();
-        let (created_image_id, created_image_url) = self.image_repository.upload_image(upload_cover_image.bytes()).await?;
+        let (created_image_id, created_image_url) = self.image_repository.upload_image(upload_cover_image).await?;
         
         let create_album = CreateAlbum::new(
               create_album_with_cover.title().to_string(),

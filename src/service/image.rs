@@ -1,6 +1,5 @@
 use std::io::Cursor;
 use std::sync::Arc;
-use anyhow::anyhow;
 use image::{ImageFormat, ImageReader};
 use uuid::Uuid;
 use crate::models::service::image::{ImageTransformOptions, Image, ImageTransformation};
@@ -40,7 +39,7 @@ impl<IR, IU> ImageServiceImpl<IR, IU>
         let mut dyn_image = ImageReader::new(Cursor::new(image.bytes()))
             .with_guessed_format()?
             .decode()?;
-        let mut image_format = image.format(); // TODO
+        let mut image_format = image.format(); // TODO: add convert to transformation
         
         image_transform_options.transformations()
             .into_iter()
@@ -54,7 +53,7 @@ impl<IR, IU> ImageServiceImpl<IR, IU>
         let image_size = image_bytes.len();
         dyn_image.write_to(&mut Cursor::new(&mut image_bytes), ImageFormat::Png)?;
         
-        Ok(Image::new(&image.id(), &image_format, image_bytes, image_size as u32))
+        Ok(Image::new(&image.id(), image.filename(), &image_format, image_bytes, image_size as u32))
     }
 }
 

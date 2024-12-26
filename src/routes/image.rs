@@ -1,5 +1,5 @@
 use actix_web::{HttpResponse, Responder, web};
-use mime::PNG;
+use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
 use uuid::Uuid;
 use crate::models::api::ImageTransformOptionsApi;
 
@@ -21,6 +21,13 @@ pub async fn get_image_by_id<IS: ImageService>(
         .get_image(&authenticated_user, &id.into_inner(), &ImageTransformOptions::from(convert_options))
         .await
         .unwrap() // TODO: error handling
-        .map(|image| HttpResponse::Ok().content_type(PNG.to_string()).body(image.take_bytes()))
+        .map(|image| HttpResponse::Ok()
+            .content_type(image.format().to_mime_type())
+            .insert_header(ContentDisposition {
+                disposition: DispositionType::Inline,
+                parameters: vec![DispositionParam::Filename(image.filename().to_string())],
+            })
+            .body(image.take_bytes())
+        )
         .unwrap_or(HttpResponse::NotFound().finish())
 }
