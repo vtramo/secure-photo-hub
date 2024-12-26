@@ -5,10 +5,10 @@ use uuid::Uuid;
 use actix_multipart::form::MultipartForm;
 use actix_multipart::form::tempfile::TempFile;
 use actix_multipart::form::json::Json as MpJson;
-use crate::models;
 use crate::models::api::VisibilityApi;
 use crate::models::service::photo::{Photo, UpdatePhoto, UploadPhoto};
-use crate::models::service::{UploadImage, UploadImageError, Visibility};
+use crate::models::service::Visibility;
+use crate::models::service::image::{UploadImage, UploadImageError};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PhotoApi {
@@ -65,7 +65,7 @@ pub struct UploadPhotoMetadataApi {
 }
 
 impl TryFrom<UploadPhotoApi> for UploadPhoto {
-    type Error = crate::models::service::UploadImageError;
+    type Error = crate::models::service::image::UploadImageError;
 
     fn try_from(upload_photo_api: UploadPhotoApi) -> Result<Self, Self::Error> {
         let UploadPhotoApi { file: image, metadata } = upload_photo_api;

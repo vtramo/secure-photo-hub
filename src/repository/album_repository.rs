@@ -1,11 +1,12 @@
 use anyhow::Context;
-use sqlx::{Acquire, PgConnection, query_file, query_file_as};
+use sqlx::{Acquire, PgConnection, query_file_as};
 use uuid::Uuid;
 
-use crate::models::entity::{ImageFormatEntity, ImageReferenceEntity, VisibilityEntity};
+use crate::models::entity::{ImageReferenceEntity, VisibilityEntity};
 use crate::models::entity::album::{AlbumCoverImageReferenceEntity, AlbumEntity, AlbumNoCoverImageReferenceEntity};
 use crate::models::service::album::CreateAlbum;
-use crate::repository::{NULL, PostgresDatabase};
+use crate::models::service::image::ImageReference;
+use crate::repository::{build_image_reference_url, PostgresDatabase};
 
 #[async_trait::async_trait]
 pub trait AlbumRepository: Clone + Send + Sync + 'static {
@@ -24,11 +25,15 @@ impl AlbumRepository for PostgresDatabase {
 
         let mut tx = conn.begin().await?;
 
-        let album_cover_image = Self::insert_image_reference(
+        let cover_image_reference = ImageReference::new(
+            create_album.cover_image_id(),    
             create_album.cover_image_url(),
-            create_album.cover_image_id(),
-            ImageFormatEntity::from(create_album.cover_image_format()),
             create_album.cover_image_size(),
+            create_album.cover_image_format(),
+        );
+        
+        let album_cover_image = Self::insert_image_reference(
+            &cover_image_reference,
             &mut *tx,
         ).await?;
 
@@ -104,7 +109,7 @@ impl PostgresDatabase {
             visibility,
             cover_image: ImageReferenceEntity {
                 id: cover_image_entity.id,
-                url: cover_image_entity.url.clone(),
+                url: build_image_reference_url(&cover_image_entity.id).to_string(),
                 size: cover_image_entity.size,
                 format: cover_image_entity.format.clone(),
                 created_at: cover_image_entity.created_at,

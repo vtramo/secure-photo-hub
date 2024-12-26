@@ -1,10 +1,12 @@
+use sqlx::PgPool;
+use sqlx::pool::PoolConnection;
+use uuid::Uuid;
+
+use crate::setup::DatabaseConfig;
+
 pub mod photo_repository;
 pub mod album_repository;
-pub mod image_repository;
-
-use sqlx::pool::PoolConnection;
-use sqlx::PgPool;
-use crate::setup::DatabaseConfig;
+pub mod image_reference_repository;
 
 #[derive(Clone, Debug)]
 pub struct PostgresDatabase {
@@ -39,3 +41,7 @@ impl PostgresDatabase {
 }
 
 const NULL: &'static str = "NULL";
+
+fn build_image_reference_url(image_id: &Uuid) -> url::Url { // TODO: set hostname
+    url::Url::parse(&format!("http://localhost:8085/images/{}", image_id)).unwrap()
+}

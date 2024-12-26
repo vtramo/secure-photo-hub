@@ -3,15 +3,15 @@ use uuid::Uuid;
 use crate::models::service::album::{Album, CreateAlbum, CreateAlbumWithCover};
 use crate::models::service::pagination::Page;
 use crate::repository::album_repository::AlbumRepository;
-use crate::repository::image_repository::ImageRepository;
 use crate::security::auth::user::AuthenticatedUser;
 use crate::service::AlbumService;
+use crate::service::image_storage::ImageStorage;
 
 #[derive(Debug, Clone)]
 pub struct AlbumServiceImpl<R, I>
     where
         R: AlbumRepository,
-        I: ImageRepository,
+        I: ImageStorage,
 {
     album_repository: Arc<R>,
     image_repository: Arc<I>,
@@ -20,7 +20,7 @@ pub struct AlbumServiceImpl<R, I>
 impl<R, I> AlbumServiceImpl<R, I> 
     where
         R: AlbumRepository,
-        I: ImageRepository,
+        I: ImageStorage,
 {
     pub fn album_repository(&self) -> Arc<R> {
         self.album_repository.clone()
@@ -34,7 +34,7 @@ impl<R, I> AlbumServiceImpl<R, I>
 impl<R, I> AlbumService for AlbumServiceImpl<R, I>
     where
         R: AlbumRepository,
-        I: ImageRepository,
+        I: ImageStorage,
 {
     async fn get_all_albums(&self, _authenticated_user: &AuthenticatedUser) -> anyhow::Result<Page<Album>> {
         let albums = self.album_repository()
@@ -61,7 +61,7 @@ impl<R, I> AlbumService for AlbumServiceImpl<R, I>
         create_album_with_cover: &CreateAlbumWithCover
     ) -> anyhow::Result<Album> {
         let upload_cover_image = create_album_with_cover.upload_image();
-        let (created_image_id, created_image_url) = self.image_repository.save_image(upload_cover_image.bytes()).await?;
+        let (created_image_id, created_image_url) = self.image_repository.upload_image(upload_cover_image.bytes()).await?;
         
         let create_album = CreateAlbum::new(
               create_album_with_cover.title().to_string(),

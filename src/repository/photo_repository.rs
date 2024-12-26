@@ -3,10 +3,11 @@ use sqlx::{Acquire, PgConnection, query_file_as};
 use sqlx::types::uuid;
 use uuid::Uuid;
 
-use crate::models::entity::{ImageFormatEntity, ImageReferenceEntity, VisibilityEntity};
+use crate::models::entity::{ImageReferenceEntity, VisibilityEntity};
 use crate::models::entity::photo::{PhotoEntity, PhotoImageReferenceEntity, PhotoNoImageReferenceEntity};
+use crate::models::service::image::ImageReference;
 use crate::models::service::photo::{CreatePhoto, UpdatePhoto};
-use crate::repository::{NULL, PostgresDatabase};
+use crate::repository::{build_image_reference_url, NULL, PostgresDatabase};
 
 #[async_trait::async_trait]
 pub trait PhotoRepository: Clone + Send + Sync + 'static {
@@ -18,24 +19,28 @@ pub trait PhotoRepository: Clone + Send + Sync + 'static {
 
 #[async_trait::async_trait]
 impl PhotoRepository for PostgresDatabase {
-    async fn create_photo(&self, photo: &CreatePhoto) -> anyhow::Result<PhotoEntity> {
+    async fn create_photo(&self, create_photo: &CreatePhoto) -> anyhow::Result<PhotoEntity> {
         let mut conn = self
             .acquire()
             .await
             .with_context(|| "Unable to acquire a database connection".to_string())?;
 
         let mut tx = conn.begin().await?;
+        
+        let image_reference = ImageReference::new(
+            create_photo.image_id(),
+            create_photo.image_url(),
+            create_photo.image_size(),
+            create_photo.image_format(),
+        );
 
         let created_image_entity = Self::insert_image_reference(
-            photo.url(),
-            photo.image_id(),
-            ImageFormatEntity::from(photo.format()),
-            photo.size(),
+            &image_reference,
             &mut *tx,
         ).await?;
 
         let created_photo_entity = Self::insert_photo(
-            photo,
+            create_photo,
             &created_image_entity,
             &mut tx
         ).await?;
@@ -104,30 +109,6 @@ impl PhotoRepository for PostgresDatabase {
 }
 
 impl PostgresDatabase {
-    pub async fn insert_image_reference(
-        url: &url::Url,
-        image_id: Uuid,
-        format: ImageFormatEntity,
-        file_size: u64,
-        conn: &mut PgConnection,
-    ) -> anyhow::Result<ImageReferenceEntity> {
-        let created_image: ImageReferenceEntity = query_file_as!(
-            ImageReferenceEntity,
-            "queries/postgres/insert_image_reference.sql",
-            image_id,
-            url.to_string(),
-            file_size as i64,
-            format as _
-        ).fetch_all(conn)
-            .await?
-            .get(0)
-            .cloned()
-            .take()
-            .ok_or(anyhow!("Unable to insert an image"))?;
-
-        Ok(created_image)
-    }
-
     pub async fn insert_photo(
         create_photo: &CreatePhoto,
         image_entity: &ImageReferenceEntity,
@@ -171,7 +152,13 @@ impl PostgresDatabase {
             tags,
             category,
             visibility,
-            image: image_entity.clone(),
+            image: ImageReferenceEntity {
+                id: image_entity.id,
+                url: build_image_reference_url(&image_entity.id).to_string(),
+                size: image_entity.size,
+                format: image_entity.format.clone(),
+                created_at: image_entity.created_at,
+            },
             created_at: created_photo_image_entity.created_at,
             is_deleted: created_photo_image_entity.is_deleted,
         })

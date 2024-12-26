@@ -1,11 +1,14 @@
-use aws_sdk_s3::Client;
-use aws_sdk_s3::primitives::ByteStream;
 use uuid::Uuid;
+use aws_sdk_s3::primitives::ByteStream;
+use aws_sdk_s3::Client;
+use image::ImageFormat;
+use crate::models::service::image::Image;
 use crate::setup::AwsS3Config;
 
 #[async_trait::async_trait]
-pub trait ImageRepository: Clone + Send + Sync + 'static {
-    async fn save_image(&self, bytes: &[u8]) -> anyhow::Result<(Uuid, url::Url)>;
+pub trait ImageStorage: Clone + Send + Sync + 'static {
+    async fn upload_image(&self, bytes: &[u8]) -> anyhow::Result<(Uuid, url::Url)>;
+    async fn download_image(&self, id: &Uuid) -> anyhow::Result<Option<Image>>;
 }
 
 #[derive(Clone, Debug)]
@@ -13,6 +16,33 @@ pub struct AwsS3Client {
     aws_sdk_s3: aws_sdk_s3::Client,
     bucket_name: String,
     endpoint_url: String,
+}
+
+#[async_trait::async_trait]
+impl ImageStorage for AwsS3Client {
+    async fn upload_image(&self, bytes: &[u8]) -> anyhow::Result<(Uuid, url::Url)> {
+        let image_id = Uuid::new_v4();
+        let image_id_string = image_id.to_string();
+
+        self.put_object(&image_id_string, ByteStream::from(bytes.to_vec())).await?;
+        let resource_url = self.build_resource_url(&image_id_string);
+
+        Ok((image_id, resource_url))
+    }
+
+    async fn download_image(&self, id: &Uuid) -> anyhow::Result<Option<Image>> {
+        let object = self.aws_sdk_s3
+            .get_object()
+            .bucket(&self.bucket_name)
+            .key(id.to_string())
+            .send()
+            .await?;
+
+        dbg!(&object);
+        let bytes = object.body.collect().await?.into_bytes().to_vec();
+        let size = bytes.len() as u32;
+        Ok(Some(Image::new(id, &ImageFormat::Jpeg, bytes, size)))
+    }
 }
 
 impl AwsS3Client {
@@ -53,18 +83,5 @@ impl AwsS3Client {
 
     fn build_resource_url(&self, key: &str) -> url::Url {
         url::Url::parse(&format!("https://{}.{}/{}", self.bucket_name, self.endpoint_url, key)).unwrap()
-    }
-}
-
-#[async_trait::async_trait]
-impl ImageRepository for AwsS3Client {
-    async fn save_image(&self, bytes: &[u8]) -> anyhow::Result<(Uuid, url::Url)> {
-        let image_id = Uuid::new_v4();
-        let image_id_string = image_id.to_string();
-
-        self.put_object(&image_id_string, ByteStream::from(bytes.to_vec())).await?;
-        let resource_url = self.build_resource_url(&image_id_string);
-
-        Ok((image_id, resource_url))
     }
 }

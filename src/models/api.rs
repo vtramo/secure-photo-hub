@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use crate::models::service::image::ImageTransformOptions;
 
 use crate::models::service::Visibility;
 
@@ -29,6 +30,20 @@ impl From<Visibility> for VisibilityApi {
             Visibility::Public => VisibilityApi::Public,
             Visibility::Private => VisibilityApi::Private,
         }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+pub struct ImageTransformOptionsApi {
+    huerotate: Option<i32>,
+    #[serde(deserialize_with = "serde_tuple::deserialize_tuple")]
+    #[serde(default)]
+    thumbnail: Option<(u32, u32)>
+}
+
+impl From<ImageTransformOptionsApi> for ImageTransformOptions {
+    fn from(convert_options_api: ImageTransformOptionsApi) -> Self {
+        Self::new(convert_options_api.huerotate, convert_options_api.thumbnail)
     }
 }
 
@@ -71,5 +86,30 @@ pub mod serde_url {
     {
         let s: String = Deserialize::deserialize(deserializer)?;
         Url::parse(&s).map_err(serde::de::Error::custom)
+    }
+}
+
+pub mod serde_tuple {
+    use serde::{Deserialize, Deserializer};
+
+    pub fn deserialize_tuple<'de, D>(deserializer: D) -> Result<Option<(u32, u32)>, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        let s: Option<String> = Option::deserialize(deserializer)?;
+
+        // If the value is `None`, return None
+        if let Some(value) = s {
+            // Split the string by ',' and attempt to parse the two numbers
+            let parts: Vec<&str> = value.split(',').collect();
+            if parts.len() == 2 {
+                let width = parts[0].parse().map_err(serde::de::Error::custom)?;
+                let height = parts[1].parse().map_err(serde::de::Error::custom)?;
+                return Ok(Some((width, height)));
+            } else {
+                return Err(serde::de::Error::custom("expected two comma-separated values"));
+            }
+        }
+        Ok(None)
     }
 }

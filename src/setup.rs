@@ -15,6 +15,7 @@ pub use setup::{
     database::DatabaseConfig, 
     http::PhotoRoutesState, 
     http::AlbumRoutesState, 
+    http::ImageRoutesState, 
     s3::AwsS3Config};
 
 use crate::setup;

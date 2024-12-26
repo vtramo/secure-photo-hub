@@ -126,6 +126,16 @@ paths:
         name: id
         schema:
           type: string
+      - in: query
+        name: huerotate
+        schema:
+          type: integer
+          example: 180
+      - in: query
+        name: thumbnail
+        schema:
+          type: string
+          example: 300,300
     get:
       tags:
         - Images

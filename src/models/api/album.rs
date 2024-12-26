@@ -6,10 +6,9 @@ use actix_multipart::form::json::Json as MpJson;
 use chrono::{DateTime, Utc};
 use url::Url;
 use uuid::Uuid;
-use crate::models;
-use crate::models::api::photo::UploadPhotoApi;
-use crate::models::service::album::{Album, CreateAlbum, CreateAlbumWithCover};
-use crate::models::service::{UploadImage, Visibility};
+use crate::models::service::album::{Album, CreateAlbumWithCover};
+use crate::models::service::Visibility;
+use crate::models::service::image::UploadImage;
 
 #[derive(Debug, MultipartForm)]
 pub struct CreateAlbumApi {
@@ -28,7 +27,7 @@ pub struct CreateAlbumMetadataApi {
 }
 
 impl TryFrom<CreateAlbumApi> for CreateAlbumWithCover {
-    type Error = crate::models::service::UploadImageError;
+    type Error = crate::models::service::image::UploadImageError;
 
     fn try_from(create_album_api: CreateAlbumApi) -> Result<Self, Self::Error> {
         let CreateAlbumApi { file: image, metadata } = create_album_api;

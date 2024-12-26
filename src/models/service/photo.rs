@@ -3,7 +3,8 @@ use image::ImageFormat;
 use uuid::Uuid;
 
 use crate::models::entity::photo::PhotoEntity;
-use crate::models::service::{Image, UploadImage, Visibility};
+use crate::models::service::Visibility;
+use crate::models::service::image::{ImageReference, UploadImage};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Photo {
@@ -15,7 +16,7 @@ pub struct Photo {
     owner_user_id: Uuid,
     album_id: Option<Uuid>,
     visibility: Visibility,
-    image: Image,
+    image: ImageReference,
     created_at: chrono::DateTime<Utc>,
 }
 
@@ -29,7 +30,7 @@ impl Photo {
         owner_user_id: Uuid,
         album_id: Option<Uuid>,
         visibility: Visibility,
-        image: Image,
+        image: ImageReference,
         created_at: chrono::DateTime<Utc>
     ) -> Self {
         Self {
@@ -69,7 +70,7 @@ impl Photo {
     pub fn visibility(&self) -> &Visibility {
         &self.visibility
     }
-    pub fn image(&self) -> &Image {
+    pub fn image(&self) -> &ImageReference {
         &self.image
     }
     pub fn created_at(&self) -> chrono::DateTime<Utc> {
@@ -109,9 +110,9 @@ pub struct CreatePhoto {
     image_id: Uuid,
     album_id: Option<Uuid>,
     visibility: Visibility,
-    url: url::Url,
-    size: u64,
-    format: ImageFormat,
+    image_url: url::Url,
+    image_size: u64,
+    image_format: ImageFormat,
 }
 
 impl CreatePhoto {
@@ -136,17 +137,17 @@ impl CreatePhoto {
     pub fn visibility(&self) -> &Visibility {
         &self.visibility
     }
-    pub fn url(&self) -> &url::Url {
-        &self.url
+    pub fn image_url(&self) -> &url::Url {
+        &self.image_url
     }
-    pub fn size(&self) -> u64 {
-        self.size
+    pub fn image_size(&self) -> u64 {
+        self.image_size
     }
-    pub fn format(&self) -> ImageFormat {
-        self.format
+    pub fn image_format(&self) -> &ImageFormat {
+        &self.image_format
     }
-    pub fn image_id(&self) -> Uuid {
-        self.image_id
+    pub fn image_id(&self) -> &Uuid {
+        &self.image_id
     }
 
     pub fn new(
@@ -171,9 +172,9 @@ impl CreatePhoto {
             image_id: image_id.clone(),
             album_id: album_id.clone(),
             visibility: visibility.clone(),
-            url: url.clone(),
-            size,
-            format: format.clone(),
+            image_url: url.clone(),
+            image_size: size,
+            image_format: format.clone(),
         }
     }
 }
@@ -189,7 +190,7 @@ impl From<PhotoEntity> for Photo {
             owner_user_id: photo_entity.owner_user_id,
             album_id: photo_entity.album_id,
             visibility: Visibility::from(photo_entity.visibility),
-            image: Image::from(photo_entity.image),
+            image: ImageReference::from(photo_entity.image),
             created_at: Default::default(),
         }
     }

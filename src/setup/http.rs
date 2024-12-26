@@ -10,7 +10,7 @@ use anyhow::Context;
 
 use crate::setup::Config;
 use crate::{repository, routes, security, service};
-use crate::repository::image_repository::AwsS3Client;
+use crate::service::image_storage::AwsS3Client;
 use crate::repository::PostgresDatabase;
 use crate::service::{AlbumService, PhotoService};
 
@@ -36,6 +36,18 @@ impl<AS: AlbumService> AlbumRoutesState<AS> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ImageRoutesState<IS> {
+    image_service: Arc<IS>
+}
+
+impl<IS> ImageRoutesState<IS> {
+    pub fn image_service(&self) -> &Arc<IS> {
+        &self.image_service
+    }
+}
+
+
 pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
     log::info!("Init http server...");
 
@@ -49,8 +61,10 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
     let database = Arc::new(repository::PostgresDatabase::connect_with_db_config(&config.database_config).await?);
     let photo_service = service::photo::PhotoServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client));
     let album_service = service::album::AlbumServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client));
+    let image_service = service::image::ImageServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client));
     let photo_routes_state = PhotoRoutesState { photo_service: Arc::new(photo_service) };
     let album_routes_state = AlbumRoutesState { album_service: Arc::new(album_service) };
+    let image_routes_state = ImageRoutesState { image_service: Arc::new(image_service) };
     
     let server_port = config.server_port;
     let server = HttpServer::new(move || {
@@ -76,6 +90,7 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(photo_routes_state.clone()))
             .app_data(web::Data::new(album_routes_state.clone()))
+            .app_data(web::Data::new(image_routes_state.clone()))
             .route(
                 &oauth_redirect_uri_path,
                 web::get().to(security::auth::oauth::oidc_redirect_endpoint),
@@ -111,6 +126,10 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
             .route(
                 "/albums",
                 web::post().to(routes::album::post_albums::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client>>),
+            )
+            .route(
+                "/images/{id}",
+                web::get().to(routes::image::get_image_by_id::<service::image::ImageServiceImpl<PostgresDatabase, AwsS3Client>>),
             )
             .service(routes::home)
     })

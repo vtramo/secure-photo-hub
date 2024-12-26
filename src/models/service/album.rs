@@ -4,7 +4,8 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::models::entity::album::AlbumEntity;
-use crate::models::service::{UploadImage, Visibility};
+use crate::models::service::Visibility;
+use crate::models::service::image::UploadImage;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Album {
@@ -141,11 +142,11 @@ impl CreateAlbum {
     pub fn visibility(&self) -> &Visibility {
         &self.visibility
     }
-    pub fn owner_user_id(&self) -> Uuid {
-        self.owner_user_id
+    pub fn owner_user_id(&self) -> &Uuid {
+        &self.owner_user_id
     }
-    pub fn cover_image_id(&self) -> Uuid {
-        self.cover_image_id
+    pub fn cover_image_id(&self) -> &Uuid {
+        &self.cover_image_id
     }
     pub fn cover_image_url(&self) -> &url::Url {
         &self.cover_image_url
@@ -153,7 +154,7 @@ impl CreateAlbum {
     pub fn cover_image_size(&self) -> u64 {
         self.cover_image_size
     }
-    pub fn cover_image_format(&self) -> ImageFormat {
-        self.cover_image_format
+    pub fn cover_image_format(&self) -> &ImageFormat {
+        &self.cover_image_format
     }
 }

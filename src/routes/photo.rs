@@ -1,6 +1,5 @@
 use actix_multipart::form::MultipartForm;
 use actix_web::{HttpResponse, Responder, web};
-use futures_util::FutureExt;
 use uuid::Uuid;
 
 use crate::models::api::photo::{PatchPhotoApi, PhotoApi};
