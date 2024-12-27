@@ -8,6 +8,9 @@ use crate::security::auth::user::AuthenticatedUser;
 use crate::service::AlbumService;
 use crate::setup::AlbumRoutesState;
 
+pub const ALBUMS_ROUTE: &'static str = "/albums";
+pub const ALBUM_BY_ID_ROUTE: &'static str = "/albums/{id}";
+
 pub async fn post_albums<AS: AlbumService>(
     authenticated_user: AuthenticatedUser,
     MultipartForm(create_album_api): MultipartForm<CreateAlbumApi>,

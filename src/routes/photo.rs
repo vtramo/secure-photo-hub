@@ -9,6 +9,9 @@ use crate::service::PhotoService;
 use crate::security::auth::user::AuthenticatedUser;
 use crate::setup::PhotoRoutesState;
 
+pub const PHOTOS_ROUTE: &'static str = "/photos";
+pub const PHOTO_BY_ID_ROUTE: &'static str = "/photos/{id}";
+
 pub async fn post_photos<PS: PhotoService>(
     authenticated_user: AuthenticatedUser,
     MultipartForm(upload_photo_api): MultipartForm<UploadPhotoApi>,

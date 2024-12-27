@@ -68,7 +68,7 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
     
     let server_port = config.server_port;
     let server = HttpServer::new(move || {
-        App::new()
+        let app = App::new()
             .wrap(from_fn(
                 security::auth::middleware::authentication_middleware_oauth2_cookie,
             ))
@@ -100,38 +100,39 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
                 web::get().to(routes::health_check::health_check),
             )
             .route(
-                "/photos",
+                routes::photo::PHOTOS_ROUTE,
                 web::post().to(routes::photo::post_photos::<service::photo::PhotoServiceImpl<PostgresDatabase, AwsS3Client>>),
             )
             .route(
-                "/photos",
+                routes::photo::PHOTOS_ROUTE,
                 web::get().to(routes::photo::get_photos::<service::photo::PhotoServiceImpl<PostgresDatabase, AwsS3Client>>),
             )
             .route(
-                "/photos/{id}",
+                routes::photo::PHOTO_BY_ID_ROUTE,
                 web::get().to(routes::photo::get_photo_by_id::<service::photo::PhotoServiceImpl<PostgresDatabase, AwsS3Client>>),
             )
             .route(
-                "/photos/{id}",
+                routes::photo::PHOTO_BY_ID_ROUTE,
                 web::patch().to(routes::photo::patch_photo::<service::photo::PhotoServiceImpl<PostgresDatabase, AwsS3Client>>),
             )
             .route(
-                "/albums",
+                routes::album::ALBUMS_ROUTE,
                 web::get().to(routes::album::get_albums::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client>>),
             )
             .route(
-                "/albums/{id}",
+                routes::album::ALBUM_BY_ID_ROUTE,
                 web::get().to(routes::album::get_album_by_id::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client>>),
             )
             .route(
-                "/albums",
+                routes::album::ALBUMS_ROUTE,
                 web::post().to(routes::album::post_albums::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client>>),
             )
             .route(
-                "/images/{id}",
+                routes::image::IMAGE_BY_ID_ROUTE,
                 web::get().to(routes::image::get_image_by_id::<service::image::ImageServiceImpl<PostgresDatabase, AwsS3Client>>),
             )
-            .service(routes::home)
+            .service(routes::home);
+        app
     })
         .bind(("0.0.0.0", server_port))?
         .run();

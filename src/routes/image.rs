@@ -8,6 +8,8 @@ use crate::security::auth::user::AuthenticatedUser;
 use crate::service::ImageService;
 use crate::setup::ImageRoutesState;
 
+pub const IMAGE_BY_ID_ROUTE: &'static str = "/images/{id}";
+
 pub async fn get_image_by_id<IS: ImageService>(
     authenticated_user: AuthenticatedUser,
     id: web::Path<Uuid>,
