@@ -30,6 +30,7 @@ pub struct OidcConfig {
     redirect_uri: Url,
     scopes: Vec<String>,
     oidc_well_known_config: OidcWellKnownConfig,
+    uma2_well_known_config: Uma2WellKnownConfig,
     jwks: JwkSet,
 }
 
@@ -56,6 +57,9 @@ impl OidcConfig {
 
     pub fn redirect_uri(&self) -> &Url {
         &self.redirect_uri
+    }
+    pub fn uma2_well_known_config(&self) -> &Uma2WellKnownConfig {
+        &self.uma2_well_known_config
     }
 }
 
@@ -102,6 +106,39 @@ pub struct OidcWellKnownConfig {
     jwks_uri: Url,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Uma2WellKnownConfig {
+    #[serde(
+        deserialize_with = "utils::deserialize_url",
+        serialize_with = "utils::serialize_url"
+    )]
+    issuer: Url,
+
+    #[serde(
+        deserialize_with = "utils::deserialize_url",
+        serialize_with = "utils::serialize_url"
+    )]
+    resource_registration_endpoint: Url,
+
+    #[serde(
+        deserialize_with = "utils::deserialize_url",
+        serialize_with = "utils::serialize_url"
+    )]
+    permission_endpoint: Url,
+}
+
+impl Uma2WellKnownConfig {
+    pub fn issuer(&self) -> &Url {
+        &self.issuer
+    }
+    pub fn resource_registration_endpoint(&self) -> &Url {
+        &self.resource_registration_endpoint
+    }
+    pub fn permission_endpoint(&self) -> &Url {
+        &self.permission_endpoint
+    }
+}
+
 impl OidcWellKnownConfig {
     pub fn issuer(&self) -> &str {
         &self.issuer
@@ -146,8 +183,9 @@ pub async fn setup_oidc_config(
     let scopes = extract_scopes(oidc)?;
 
     let well_know_openid_config_url = build_well_known_openid_config_url(&auth_server_url)?;
-    let oidc_well_known_config =
-        fetch_well_known_openid_config(&well_know_openid_config_url).await?;
+    let oidc_well_known_config = fetch_well_known_openid_config(&well_know_openid_config_url).await?;
+    let well_know_openid_config_url = build_well_known_uma2_config_url(&auth_server_url)?;
+    let uma2_well_known_config = fetch_well_know_uma2_config(&well_know_openid_config_url).await?;
     let jwks = fetch_jwks(&oidc_well_known_config.jwks_uri).await?;
 
     Ok(OidcConfig {
@@ -157,6 +195,7 @@ pub async fn setup_oidc_config(
         scopes,
         redirect_uri,
         oidc_well_known_config,
+        uma2_well_known_config,
         jwks,
     })
 }
@@ -253,6 +292,12 @@ fn build_well_known_openid_config_url(auth_server_url: &Url) -> anyhow::Result<r
         .context("Failed to build well-known OpenID configuration URL from auth server URL")
 }
 
+fn build_well_known_uma2_config_url(auth_server_url: &Url) -> anyhow::Result<reqwest::Url> {
+    let well_known_url = format!("{}/.well-known/uma2-configuration", auth_server_url);
+    reqwest::Url::parse(&well_known_url)
+        .context("Failed to build well-known uma2 configuration URL from auth server URL")
+}
+
 async fn fetch_well_known_openid_config(
     well_know_openid_config_url: &reqwest::Url,
 ) -> anyhow::Result<OidcWellKnownConfig> {
@@ -266,6 +311,26 @@ async fn fetch_well_known_openid_config(
 
     let config = response
         .json::<OidcWellKnownConfig>()
+        .await
+        .context("Failed to parse OIDC well-known configuration JSON")?;
+
+    Ok(config)
+}
+
+
+async fn fetch_well_know_uma2_config(
+    well_know_uma2_config_url: &reqwest::Url,
+) -> anyhow::Result<Uma2WellKnownConfig> {
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(well_know_uma2_config_url.clone())
+        .send()
+        .await
+        .context("Failed to send request to OIDC well-known endpoint")?;
+
+    let config = response
+        .json::<Uma2WellKnownConfig>()
         .await
         .context("Failed to parse OIDC well-known configuration JSON")?;
 

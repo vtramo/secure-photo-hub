@@ -19,14 +19,17 @@ pub async fn post_photos<PS: PhotoService>(
 ) -> impl Responder {
     let upload_photo = UploadPhoto::try_from(upload_photo_api).unwrap(); // TODO: error handling
 
-    let photo = PhotoApi::from(app_state
+    app_state
         .get_ref()
         .photo_service()
         .create_photo(&authenticated_user, &upload_photo)
         .await
-        .unwrap()); // TODO: error handling
-
-    HttpResponse::Created().json(photo)
+        .map(PhotoApi::from)
+        .map(|photo| HttpResponse::Created().json(photo))
+        .unwrap_or_else(|err| {
+            eprintln!("{}", err.to_string());
+            HttpResponse::InternalServerError().finish()
+        }) // TODO: error handling
 }
 
 pub async fn get_photos<PS: PhotoService>(

@@ -40,7 +40,7 @@ services:
       - KC_LOG_LEVEL=info
       - KC_HEALTH_ENABLED=true
     volumes:
-      - ./ops/keycloak/policies/jar/only-resource-owner-policy.jar:/opt/keycloak/providers/only-resource-owner-policy.jar
+      - ./ops/keycloak/policies/jar/policies.jar:/opt/keycloak/providers/policies.jar
       - ./ops/keycloak/import/secure-photo-hub-realm.json:/opt/keycloak/data/import/secure-photo-hub-realm.json
     command: ["start-dev", "--import-realm", "--verbose"]
     healthcheck:

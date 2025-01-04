@@ -19,6 +19,7 @@ mod redirect_endpoint;
 mod refresh_token_request;
 mod token_validator;
 mod user_info_request;
+mod client_session;
 
 pub const OAUTH_AUTHORIZATION_REQUEST_STATE_SESSION_KEY: &'static str =
     "oauth_authorization_request_state";
@@ -144,6 +145,7 @@ pub struct OAuthAuthorizationResponse {
     refresh_expires_in: u64,
     #[serde(rename = "not-before-policy")]
     not_before_policy: u64,
+    #[serde(default)]
     session_state: String,
     scope: String,
 }

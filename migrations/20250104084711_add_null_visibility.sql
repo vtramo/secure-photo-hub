@@ -1,0 +1,1 @@
+ALTER TYPE visibility ADD VALUE 'NULL'

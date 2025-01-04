@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context};
 use sqlx::{PgConnection, query_file_as};
 use uuid::Uuid;
 
-use crate::models::entity::{ImageFormatEntity, ImageReferenceEntity};
+use crate::models::entity::{ImageFormatEntity, ImageReferenceEntity, VisibilityEntity};
 use crate::models::service::image::ImageReference;
 use crate::repository::PostgresDatabase;
 
@@ -37,14 +37,18 @@ impl PostgresDatabase {
         conn: &mut PgConnection,
     ) -> anyhow::Result<ImageReferenceEntity> {
         let id = image_reference.id();
+        let owner_user_id = image_reference.owner_user_id();
         let url = image_reference.url().to_string();
         let size = image_reference.size();
         let format = ImageFormatEntity::from(image_reference.format());
+        let visibility = VisibilityEntity::from(image_reference.visibility());
         
         let created_image: ImageReferenceEntity = query_file_as!(
             ImageReferenceEntity,
             "queries/postgres/insert_image_reference.sql",
             id,
+            owner_user_id,
+            visibility as _,
             url,
             size as i64,
             format as _

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use anyhow::anyhow;
 use url::Url;
 use uuid::Uuid;
 use crate::models::service::pagination::Page;
@@ -7,35 +8,41 @@ use crate::service::PhotoService;
 use crate::service::image_storage::ImageStorage;
 use crate::repository::photo_repository::PhotoRepository;
 use crate::security::auth::user::AuthenticatedUser;
+use crate::security::authz::PhotoPolicyEnforcer;
 
 #[derive(Debug, Clone)]
-pub struct PhotoServiceImpl<R, I>
+pub struct PhotoServiceImpl<R, I, P>
     where
         R: PhotoRepository,
         I: ImageStorage,
+        P: PhotoPolicyEnforcer,
 {
     photo_repository: Arc<R>,
     image_repository: Arc<I>,
+    photo_policy_enforcer: Arc<P>,
 }
 
-impl<R, I> PhotoServiceImpl<R, I>
+impl<R, I, P> PhotoServiceImpl<R, I, P>
     where
         R: PhotoRepository,
         I: ImageStorage,
+        P: PhotoPolicyEnforcer,
 {
-    pub fn new(photo_repository: Arc<R>, image_repository: Arc<I>) -> Self {
+    pub fn new(photo_repository: Arc<R>, image_repository: Arc<I>, photo_policy_enforcer: Arc<P>) -> Self {
         Self {
             photo_repository,
             image_repository,
+            photo_policy_enforcer
         }
     }
 }
 
 #[async_trait::async_trait]
-impl<R, I> PhotoService for PhotoServiceImpl<R, I>
+impl<R, I, P> PhotoService for PhotoServiceImpl<R, I, P>
     where
         R: PhotoRepository,
         I: ImageStorage,
+        P: PhotoPolicyEnforcer
 {
     async fn get_all_photos(&self, _authenticated_user: &AuthenticatedUser) -> anyhow::Result<Page<Photo>> {
         let photos = self.photo_repository
@@ -51,13 +58,23 @@ impl<R, I> PhotoService for PhotoServiceImpl<R, I>
 
     async fn get_photo_by_id(
         &self,
-        _authenticated_user: &AuthenticatedUser,
+        authenticated_user: &AuthenticatedUser,
         id: &Uuid,
     ) -> anyhow::Result<Option<Photo>> {
-        Ok(self.photo_repository
+        let photo_option = self
+            .photo_repository
             .find_photo_by_id(id)
             .await?
-            .map(Photo::from))
+            .map(Photo::from);
+        
+        if let Some(photo) = &photo_option {
+            let can_view_photo = self.photo_policy_enforcer.can_view_photo(authenticated_user, photo).await?;
+            if !can_view_photo {
+                return Err(anyhow::anyhow!("Unauthorized to view photo with id: {}", id).into()); // TODO: Error Handling
+            }
+        }
+        
+        Ok(photo_option)
     }
 
     async fn create_photo(
@@ -65,6 +82,14 @@ impl<R, I> PhotoService for PhotoServiceImpl<R, I>
         authenticated_user: &AuthenticatedUser,
         upload_photo: &UploadPhoto,
     ) -> anyhow::Result<Photo> {
+        dbg!("Creating a photo..");
+        let can_create_photo = self.photo_policy_enforcer.can_create_photo(authenticated_user).await?;
+        if !can_create_photo {
+            return Err(anyhow::anyhow!("Unauthorized to create a photo").into()); // TODO: Error Handling
+        }
+
+        dbg!("Exit policy   ");
+        
         let upload_image = upload_photo.upload_image();
         let (created_image_id, created_image_url) = self.image_repository.upload_image(upload_image).await?;
 
@@ -90,6 +115,11 @@ impl<R, I> PhotoService for PhotoServiceImpl<R, I>
         authenticated_user: &AuthenticatedUser, 
         update_photo: &UpdatePhoto
     ) -> anyhow::Result<Photo> {
+        let can_edit_photo = self.photo_policy_enforcer.can_edit_photo(authenticated_user, update_photo).await?;
+        if !can_edit_photo {
+            return Err(anyhow::anyhow!("Unauthorized to edit photo with id {}", update_photo.id()).into()); // TODO: Error Handling
+        }
+        
         self.photo_repository
             .update_photo(update_photo)
             .await
@@ -100,9 +130,11 @@ impl<R, I> PhotoService for PhotoServiceImpl<R, I>
 #[allow(unused_imports, dead_code)]
 mod tests {
     use actix_web::web::service;
+    use async_trait::async_trait;
     use image::ImageFormat;
 
     use crate::models::service::image::{Image, UploadImage};
+    use crate::models::service::Visibility;
     use crate::repository::PostgresDatabase;
 
     use super::*;
@@ -110,14 +142,32 @@ mod tests {
     #[derive(Clone)]
     struct MockImageRepository;
 
+    #[derive(Clone)]
+    struct MockPhotoPolicyEnforcer;
+
     #[async_trait::async_trait]
     impl ImageStorage for MockImageRepository {
-        async fn upload_image(&self, bytes: &UploadImage) -> anyhow::Result<(Uuid, url::Url)> {
+        async fn upload_image(&self, _bytes: &UploadImage) -> anyhow::Result<(Uuid, url::Url)> {
             Ok((Uuid::new_v4(), Url::parse("https://localhost:8080/").unwrap()))
         }
 
-        async fn download_image(&self, id: &Uuid) -> anyhow::Result<Option<Image>> {
+        async fn download_image(&self, _id: &Uuid) -> anyhow::Result<Option<Image>> {
             Ok(None)
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl PhotoPolicyEnforcer for MockPhotoPolicyEnforcer {
+        async fn can_view_photo(&self, _authenticated_user: &AuthenticatedUser, _photo: &Photo) -> anyhow::Result<bool> {
+            Ok(true)
+        }
+
+        async fn can_create_photo(&self, authenticated_user: &AuthenticatedUser) -> anyhow::Result<bool> {
+            Ok(true)
+        }
+
+        async fn can_edit_photo(&self, _authenticated_user: &AuthenticatedUser, _update_photo: &UpdatePhoto) -> anyhow::Result<bool> {
+            Ok(true)
         }
     }
 
@@ -139,7 +189,7 @@ mod tests {
             "category".to_string(),
             vec!["tag".to_string(), "tag2".to_string()],
             Visibility::Public,
-            UploadImage::new(vec![], ImageFormat::Png, 0),
+            UploadImage::new("", vec![], ImageFormat::Png, 0),
         );
 
         let created_photo = photo_service.create_photo(&authenticated_user, &upload_photo).await.unwrap();
@@ -152,9 +202,11 @@ mod tests {
         let db_url: &'static str = env!("DATABASE_URL");
         let pg = Arc::new(PostgresDatabase::connect(db_url).await.unwrap());
         let mock_image_repository = Arc::new(MockImageRepository {});
+        let mock_photo_policy_enforcer = Arc::new(MockPhotoPolicyEnforcer {});
         let service = PhotoServiceImpl {
             photo_repository: pg.clone(),
             image_repository: mock_image_repository.clone(),
+            photo_policy_enforcer: mock_photo_policy_enforcer,
         };
         let authenticated_user = AuthenticatedUser::new(
             &Uuid::new_v4(),
@@ -164,6 +216,7 @@ mod tests {
             "test test",
             "test@test.test",
             true,
+            "token"
         );
         (service, authenticated_user)
     }

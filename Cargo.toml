@@ -17,6 +17,7 @@ jsonwebtoken = "9.3.0"
 openssl = { version = "0.10.68", features = ["vendored"]}
 reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1.0.214", features = ["derive", "serde_derive"] }
+serde_urlencoded = "0.7.1"
 actix-web = "4.9.0"
 actix-session = { version = "0.10.1", features = ["redis-session"] }
 anyhow = "1.0.92"
@@ -42,3 +43,4 @@ url = "2.5.2"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 tokio = { version = "1.41.0", features = ["macros"] }
 mime = "0.3.17"
+futures = "0.3.31"

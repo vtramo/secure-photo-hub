@@ -5,6 +5,16 @@
       "name": "Only User Owner Policy",
       "fileName": "only-resource-owner-policy.js",
       "description": "Only User Owner Policy"
+    },
+    {
+      "name": "Has Private Visibility Policy",
+      "fileName": "has-private-visibility-policy.js",
+      "description": "Has Private Visibility Policy"
+    },
+    {
+      "name": "Has Public Visibility Policy",
+      "fileName": "has-public-visibility-policy.js",
+      "description": "Has Public Visibility Policy"
     }
   ],
   "mappers": [],

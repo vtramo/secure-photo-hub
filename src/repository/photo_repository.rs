@@ -29,9 +29,11 @@ impl PhotoRepository for PostgresDatabase {
         
         let image_reference = ImageReference::new(
             create_photo.image_id(),
+            create_photo.owner_user_id(),
             create_photo.image_url(),
             create_photo.image_size(),
             create_photo.image_format(),
+            create_photo.visibility(),
         );
 
         let created_image_entity = Self::insert_image_reference(
@@ -90,6 +92,7 @@ impl PhotoRepository for PostgresDatabase {
         let photo_id = update_photo.id();
         let album_id = update_photo.album_id().clone().unwrap_or(Uuid::nil());
         let title = update_photo.title().clone().unwrap_or(String::from(NULL));
+        let visibility = update_photo.visibility().clone().map(VisibilityEntity::from).unwrap_or(VisibilityEntity::Null);
         
         let updated_photo_entity: PhotoImageReferenceEntity = query_file_as!(
             PhotoImageReferenceEntity,
@@ -97,6 +100,7 @@ impl PhotoRepository for PostgresDatabase {
             photo_id,
             album_id,
             title,
+            visibility as _,
         ).fetch_all(&mut *conn)
             .await.map_err(|err| anyhow!("Unable to update a photo {}", err))?
             .get(0)
@@ -154,8 +158,10 @@ impl PostgresDatabase {
             visibility,
             image: ImageReferenceEntity {
                 id: image_entity.id,
+                owner_user_id: image_entity.owner_user_id,
                 url: build_image_reference_url(&image_entity.id).to_string(),
                 size: image_entity.size,
+                visibility,
                 format: image_entity.format.clone(),
                 created_at: image_entity.created_at,
             },
@@ -282,6 +288,7 @@ mod tests {
         let update_photo = UpdatePhoto::new(
             &created_photo.id,
             Some(&new_title),
+            None,
             None,
         );
         let updated_photo = pg.update_photo(&update_photo).await.unwrap();

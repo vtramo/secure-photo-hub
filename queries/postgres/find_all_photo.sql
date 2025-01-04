@@ -3,7 +3,7 @@ SELECT
     photos.title AS "title!",
     photos.description AS "description!",
     photos.visibility AS "visibility!: _",
-    photos.owner_user_id AS "owner_user_id!",
+    photos.owner_user_id AS "photo_owner_user_id!",
     photos.tags AS "tags!: Vec<String>",
     photos.category AS "category!: _",
     photos.album_id AS "album_id?",
@@ -12,6 +12,7 @@ SELECT
     photos.created_at AS "photo_created_at!",
 
     images.id AS "image_id!",
+    images.owner_user_id AS "image_owner_user_id!",
     images.url AS "url!",
     images.file_size AS "size!",
     images.format AS "format!: _",

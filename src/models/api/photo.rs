@@ -92,6 +92,7 @@ pub struct PatchPhotoApi {
     pub title: Option<String>,
     #[serde(rename = "albumId")]
     pub album_id: Option<Uuid>,
+    pub visibility: Option<Visibility>,
 }
 
 impl UpdatePhoto {
@@ -100,6 +101,7 @@ impl UpdatePhoto {
             &photo_id,
             patch_photo_api.title.as_ref(),
             patch_photo_api.album_id.as_ref(),
+            patch_photo_api.visibility.as_ref(),
         )
     }
 }

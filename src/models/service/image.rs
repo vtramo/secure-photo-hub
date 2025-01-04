@@ -5,12 +5,15 @@ use image::ImageFormat;
 use uuid::Uuid;
 
 use crate::models::entity::{ImageFormatEntity, ImageReferenceEntity};
+use crate::models::service::Visibility;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImageReference {
     id: Uuid,
+    owner_user_id: Uuid,
     url: url::Url,
     size: u64,
+    visibility: Visibility,
     format: ImageFormat,
 }
 
@@ -27,18 +30,26 @@ impl ImageReference {
     pub fn format(&self) -> ImageFormat {
         self.format
     }
-    pub fn new(id: &Uuid, url: &url::Url, size: u64, format: &ImageFormat) -> Self {
-        Self { id: id.clone(), url: url.clone(), size, format: format.clone() }
+    pub fn visibility(&self) -> Visibility {
+        self.visibility.clone()
+    }
+    pub fn new(id: &Uuid, owner_user_id: &Uuid, url: &url::Url, size: u64, format: &ImageFormat, visibility: &Visibility) -> Self {
+        Self { id: id.clone(), owner_user_id: owner_user_id.clone(), url: url.clone(), size, visibility: visibility.clone(), format: format.clone() }
+    }
+    pub fn owner_user_id(&self) -> &Uuid {
+        &self.owner_user_id
     }
 }
 
 impl From<ImageReferenceEntity> for ImageReference {
-    fn from(image_entity: ImageReferenceEntity) -> Self {
+    fn from(image_reference_entity: ImageReferenceEntity) -> Self {
         Self {
-            id: image_entity.id,
-            url: url::Url::parse(&image_entity.url).unwrap(),
-            size: image_entity.size as u64,
-            format: ImageFormat::from(image_entity.format),
+            id: image_reference_entity.id,
+            owner_user_id: image_reference_entity.owner_user_id,
+            url: url::Url::parse(&image_reference_entity.url).unwrap(),
+            size: image_reference_entity.size as u64,
+            visibility: Visibility::from(image_reference_entity.visibility),
+            format: ImageFormat::from(image_reference_entity.format),
         }
     }
 }

@@ -1,11 +1,12 @@
 use std::fmt;
+use serde::{Deserialize, Serialize};
 
 pub mod photo;
 pub mod album;
 pub mod pagination;
 pub mod image;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Visibility {
     Public,
     Private,

@@ -77,6 +77,10 @@ paths:
                   properties:
                     title:
                       type: string
+                - type: object
+                  properties:
+                    visibility:
+                      type: string
       responses:
         200:
           description: Photo successfully updated and returned
@@ -172,10 +176,6 @@ paths:
           application/json:
             schema:
               oneOf:
-                - type: object
-                  properties:
-                    albumId:
-                      type: string
                 - type: object
                   properties:
                     title:

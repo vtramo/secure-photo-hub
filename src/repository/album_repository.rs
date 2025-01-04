@@ -27,9 +27,11 @@ impl AlbumRepository for PostgresDatabase {
 
         let cover_image_reference = ImageReference::new(
             create_album.cover_image_id(),    
+            create_album.owner_user_id(),
             create_album.cover_image_url(),
             create_album.cover_image_size(),
             create_album.cover_image_format(),
+            create_album.visibility(),
         );
         
         let album_cover_image = Self::insert_image_reference(
@@ -109,8 +111,10 @@ impl PostgresDatabase {
             visibility,
             cover_image: ImageReferenceEntity {
                 id: cover_image_entity.id,
+                owner_user_id: cover_image_entity.owner_user_id,
                 url: build_image_reference_url(&cover_image_entity.id).to_string(),
                 size: cover_image_entity.size,
+                visibility,
                 format: cover_image_entity.format.clone(),
                 created_at: cover_image_entity.created_at,
             },

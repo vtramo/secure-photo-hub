@@ -21,6 +21,7 @@ pub struct AuthenticatedUser {
     full_name: String,
     email: String,
     email_verified: bool,
+    access_token: String,
 }
 
 impl AuthenticatedUser {
@@ -31,7 +32,8 @@ impl AuthenticatedUser {
         family_name: &str, 
         full_name: &str, 
         email: &str, 
-        email_verified: bool
+        email_verified: bool,
+        access_token: &str,
     ) -> Self {
         Self { 
             id: id.clone(), 
@@ -40,7 +42,8 @@ impl AuthenticatedUser {
             family_name: family_name.to_string(), 
             full_name: full_name.to_string(), 
             email: email.to_string(), 
-            email_verified 
+            email_verified,
+            access_token: access_token.to_string(),
         }
     }
     pub fn id(&self) -> &Uuid {
@@ -64,33 +67,34 @@ impl AuthenticatedUser {
     pub fn email_verified(&self) -> bool {
         self.email_verified
     }
-}
-
-impl From<&IdTokenClaims> for AuthenticatedUser {
-    fn from(id_token_claims: &IdTokenClaims) -> Self {
-        Self {
-            id: Uuid::parse_str(&id_token_claims.sub().to_string()).expect(""),
-            username: id_token_claims.preferred_username().to_string(),
-            given_name: id_token_claims.given_name().to_string(),
-            family_name: id_token_claims.family_name().to_string(),
-            full_name: id_token_claims.name().to_string(),
-            email: id_token_claims.email().to_string(),
-            email_verified: id_token_claims.email_verified(),
-        }
+    pub fn access_token(&self) -> &str {
+        &self.access_token
     }
-}
-
-impl From<UserInfoResponse> for AuthenticatedUser {
-    fn from(value: UserInfoResponse) -> Self {
-        Self {
-            id: Uuid::parse_str(&value.sub().to_string()).expect(""),
-            username: value.preferred_username().to_string(),
-            given_name: value.given_name().to_string(),
-            family_name: value.family_name().to_string(),
-            full_name: value.name().to_string(),
-            email: value.email().to_string(),
-            email_verified: value.email_verified(),
-        }
+    
+    pub fn from_id_token_claims(id_token_claims: &IdTokenClaims, access_token: &str) -> Self {
+        Self::new(
+            &Uuid::parse_str(&id_token_claims.sub().to_string()).expect(""),
+            id_token_claims.preferred_username(),
+            id_token_claims.given_name(),
+            id_token_claims.family_name(),
+            id_token_claims.name(),
+            id_token_claims.email(),
+            id_token_claims.email_verified(),
+            access_token,
+        )
+    }
+    
+    pub fn from_user_info_response(user_info_response: &UserInfoResponse, access_token: &str) -> Self {
+        Self::new(
+            &Uuid::parse_str(&user_info_response.sub().to_string()).expect(""),
+            user_info_response.preferred_username(),
+            user_info_response.given_name(),
+            user_info_response.family_name(),
+            user_info_response.name(),
+            user_info_response.email(),
+            user_info_response.email_verified(),
+            access_token,
+        )
     }
 }
 

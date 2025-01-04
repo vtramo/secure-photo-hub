@@ -62,7 +62,7 @@ pub async fn oidc_redirect_endpoint(
         &code_verifier,
     );
 
-    if let Ok(authorization_response) = access_token_request.send().await {
+    if let Ok(authorization_response) = access_token_request.send_authorization_code_request().await {
         let session_tokens = OAuthSessionTokens::new(
             authorization_response.access_token(),
             authorization_response.refresh_token(),
@@ -90,7 +90,7 @@ pub async fn oidc_redirect_endpoint(
 
                 if let Err(e) = session.insert(
                     USER_SESSION_KEY,
-                    AuthenticatedUser::from(validated_tokens.id_token_claims()),
+                    AuthenticatedUser::from_id_token_claims(validated_tokens.id_token_claims(), validated_tokens.access_token()),
                 ) {
                     log::error!("Failed to insert user session: {:?}", e);
                     return HttpResponse::InternalServerError().finish();

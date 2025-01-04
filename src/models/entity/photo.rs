@@ -22,7 +22,7 @@ impl From<PhotoImageReferenceEntity> for PhotoEntity {
         PhotoEntity {
             id: photo_image_entity.photo_id,
             album_id: photo_image_entity.album_id.filter(|album_id| !album_id.is_nil()),
-            owner_user_id: photo_image_entity.owner_user_id,
+            owner_user_id: photo_image_entity.photo_owner_user_id,
             title: photo_image_entity.title,
             description: photo_image_entity.description,
             tags: photo_image_entity.tags,
@@ -30,8 +30,10 @@ impl From<PhotoImageReferenceEntity> for PhotoEntity {
             visibility: photo_image_entity.visibility,
             image: ImageReferenceEntity {
                 id: photo_image_entity.image_id,
+                owner_user_id: photo_image_entity.image_owner_user_id,
                 url: photo_image_entity.url,
                 size: photo_image_entity.size,
+                visibility: photo_image_entity.visibility,
                 format: photo_image_entity.format,
                 created_at: photo_image_entity.image_created_at,
             },
@@ -47,7 +49,7 @@ pub struct PhotoImageReferenceEntity {
     pub title: String,
     pub description: String,
     pub visibility: VisibilityEntity,
-    pub owner_user_id: Uuid,
+    pub photo_owner_user_id: Uuid,
     pub tags: Vec<String>,
     pub category: String,
     pub album_id: Option<Uuid>,
@@ -56,6 +58,7 @@ pub struct PhotoImageReferenceEntity {
     pub photo_created_at: chrono::DateTime<chrono::Utc>,
 
     pub image_id: Uuid,
+    pub image_owner_user_id: Uuid,
     pub url: String,
     pub size: i64,
     pub format: ImageFormatEntity,

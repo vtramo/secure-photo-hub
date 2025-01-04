@@ -72,6 +72,7 @@
         "composite": true,
         "composites": {
           "realm": [
+            "BasicUser",
             "offline_access",
             "uma_authorization"
           ],
@@ -85,19 +86,27 @@
         "clientRole": false,
         "containerId": "287dc33e-639a-4fd1-a06f-9326e54a514b",
         "attributes": {}
+      },
+      {
+        "id": "46564425-6bb1-41ee-b7ed-13a423368087",
+        "name": "Admin",
+        "description": "",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "287dc33e-639a-4fd1-a06f-9326e54a514b",
+        "attributes": {}
+      },
+      {
+        "id": "4d004f7b-aafb-496c-9a53-b996d8115669",
+        "name": "BasicUser",
+        "description": "A registered user",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "287dc33e-639a-4fd1-a06f-9326e54a514b",
+        "attributes": {}
       }
     ],
     "client": {
-      "secure-photo-hub-rest-api": [
-        {
-          "id": "bf2c6b50-7d57-4e64-b15e-d7cc2011f727",
-          "name": "uma_protection",
-          "composite": false,
-          "clientRole": true,
-          "containerId": "190220a9-ab14-4e97-8fa0-c2099fea8e46",
-          "attributes": {}
-        }
-      ],
       "realm-management": [
         {
           "id": "2da25684-a5a2-40a6-ad85-7a0a49d201ca",
@@ -137,10 +146,10 @@
                 "manage-realm",
                 "view-identity-providers",
                 "impersonation",
-                "manage-users",
                 "manage-events",
-                "query-groups",
+                "manage-users",
                 "manage-identity-providers",
+                "query-groups",
                 "query-realms",
                 "query-users",
                 "view-authorization",
@@ -148,8 +157,8 @@
                 "create-client",
                 "view-realm",
                 "view-clients",
-                "view-events",
                 "manage-authorization",
+                "view-events",
                 "query-clients",
                 "manage-clients"
               ]
@@ -312,6 +321,16 @@
       ],
       "security-admin-console": [],
       "admin-cli": [],
+      "secure-photo-hub-rest-api": [
+        {
+          "id": "bf2c6b50-7d57-4e64-b15e-d7cc2011f727",
+          "name": "uma_protection",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "190220a9-ab14-4e97-8fa0-c2099fea8e46",
+          "attributes": {}
+        }
+      ],
       "account-console": [],
       "broker": [
         {
@@ -479,6 +498,7 @@
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
+        "uma_authorization",
         "default-roles-secure-photo-hub"
       ],
       "clientRoles": {
@@ -637,7 +657,8 @@
       "protocol": "openid-connect",
       "attributes": {
         "realm_client": "false",
-        "client.use.lightweight.access.token.enabled": "true"
+        "client.use.lightweight.access.token.enabled": "true",
+        "post.logout.redirect.uris": "+"
       },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
@@ -679,7 +700,51 @@
       "frontchannelLogout": false,
       "protocol": "openid-connect",
       "attributes": {
-        "realm_client": "true"
+        "realm_client": "true",
+        "post.logout.redirect.uris": "+"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": false,
+      "nodeReRegistrationTimeout": 0,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "organization",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "93f71bf4-06f1-4ba2-a072-2a9d33ba446a",
+      "clientId": "realm-management",
+      "name": "${client_realm-management}",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": true,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "true",
+        "post.logout.redirect.uris": "+"
       },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": false,
@@ -712,7 +777,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": true,
       "clientAuthenticatorType": "client-secret",
-      "secret": "ERMXusbPy62B1JiEGwT7bKMcal8mrwId",
+      "secret": "**********",
       "redirectUris": [
         "http://localhost:8085/openid_redirect_uri_endpoint"
       ],
@@ -731,8 +796,9 @@
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {
-        "client.secret.creation.time": "1731098499",
+        "client.secret.creation.time": "1735969702",
         "client.introspection.response.allow.jwt.claim.enabled": "false",
+        "post.logout.redirect.uris": "+",
         "oauth2.device.authorization.grant.enabled": "false",
         "use.jwks.url": "false",
         "backchannel.logout.revoke.offline.tokens": "false",
@@ -742,9 +808,9 @@
         "client.use.lightweight.access.token.enabled": "false",
         "backchannel.logout.session.required": "true",
         "client_credentials.use_refresh_token": "false",
-        "tls.client.certificate.bound.access.tokens": "false",
-        "require.pushed.authorization.requests": "false",
         "acr.loa.map": "{}",
+        "require.pushed.authorization.requests": "false",
+        "tls.client.certificate.bound.access.tokens": "false",
         "display.on.consent.screen": "false",
         "pkce.code.challenge.method": "S256",
         "token.response.type.bearer.lower-case": "false"
@@ -761,8 +827,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "client_id",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "client_id",
             "jsonType.label": "String"
@@ -776,8 +843,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "clientHost",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "clientHost",
             "jsonType.label": "String"
@@ -791,8 +859,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "clientAddress",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "clientAddress",
             "jsonType.label": "String"
@@ -819,61 +888,179 @@
         "policyEnforcementMode": "ENFORCING",
         "resources": [
           {
-            "name": "Default Resource",
-            "type": "urn:secure-photo-hub-rest-api:resources:default",
+            "name": "Photos",
+            "type": "owned",
             "ownerManagedAccess": false,
+            "displayName": "Photos",
             "attributes": {},
             "uris": [
-              "/*"
-            ]
+              "/photos/{id}"
+            ],
+            "scopes": [
+              {
+                "name": "ViewAll"
+              },
+              {
+                "name": "Create"
+              },
+              {
+                "name": "ViewOwn"
+              },
+              {
+                "name": "View"
+              }
+            ],
+            "icon_uri": ""
           }
         ],
-        "policies": [],
-        "scopes": [],
+        "policies": [
+          {
+            "name": "Only User Owner Policy",
+            "description": "Only the resource owner",
+            "type": "script-only-resource-owner-policy.js",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {}
+          },
+          {
+            "name": "Basic User Role Policy",
+            "description": "The user is a registered user (has the BasicUser realm role)",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "fetchRoles": "false",
+              "roles": "[{\"id\":\"BasicUser\",\"required\":true}]"
+            }
+          },
+          {
+            "name": "Admin Role Policy",
+            "description": "The user has the administrator role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "fetchRoles": "false",
+              "roles": "[{\"id\":\"Admin\",\"required\":true}]"
+            }
+          },
+          {
+            "name": "Has Private Visibility Policy",
+            "description": "The resource has a \"visibility\" attribute set to \"Private\"",
+            "type": "script-has-private-visibility-policy.js",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {}
+          },
+          {
+            "name": "Has Public Visibility Policy",
+            "description": "The resource has a \"visibility\" attribute set to \"Public\"",
+            "type": "script-has-public-visibility-policy.js",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {}
+          },
+          {
+            "name": "BasicUser & Resource Has Public Visibility Policy",
+            "description": "BasicUser Role can do something with a public resource (e.g. can view all public resources)",
+            "type": "aggregate",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "applyPolicies": "[\"Has Public Visibility Policy\",\"Basic User Role Policy\"]"
+            }
+          },
+          {
+            "name": "Not Has Private Visibility Policy",
+            "description": "",
+            "type": "script-has-private-visibility-policy.js",
+            "logic": "NEGATIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {}
+          },
+          {
+            "name": "Only User Owner Or Admin Policy",
+            "description": "",
+            "type": "aggregate",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "applyPolicies": "[\"Admin Role Policy\",\"Only User Owner Policy\"]"
+            }
+          },
+          {
+            "name": "Admin can view all owned resources",
+            "description": "An admin can view all resources that belong to a user",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "defaultResourceType": "owned",
+              "applyPolicies": "[\"Admin Role Policy\"]",
+              "scopes": "[\"ViewAll\"]"
+            }
+          },
+          {
+            "name": "An user with BasicUserRole can create photos",
+            "description": "Registered users (BasicUser role) can create photos",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Photos\"]",
+              "scopes": "[\"Create\"]",
+              "applyPolicies": "[\"Basic User Role Policy\"]"
+            }
+          },
+          {
+            "name": "Only user owner or Admin can view owned resources with private visibility",
+            "description": "All resources with an owner and private visibility can only be seen by the owner or by the admin",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "defaultResourceType": "owned",
+              "resources": "[\"Photos\"]",
+              "scopes": "[\"View\"]",
+              "applyPolicies": "[\"Not Has Private Visibility Policy\",\"Only User Owner Or Admin Policy\"]"
+            }
+          },
+          {
+            "name": "A BasicUser can view all public photos",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Photos\"]",
+              "scopes": "[\"View\",\"ViewAll\"]",
+              "applyPolicies": "[\"BasicUser & Resource Has Public Visibility Policy\"]"
+            }
+          }
+        ],
+        "scopes": [
+          {
+            "name": "View",
+            "iconUri": "",
+            "displayName": "View"
+          },
+          {
+            "name": "ViewAll",
+            "iconUri": "",
+            "displayName": "ViewAll"
+          },
+          {
+            "name": "ViewOwn",
+            "iconUri": "",
+            "displayName": "ViewOwn"
+          },
+          {
+            "name": "Create",
+            "iconUri": ""
+          }
+        ],
         "decisionStrategy": "UNANIMOUS"
       }
-    },
-    {
-      "id": "93f71bf4-06f1-4ba2-a072-2a9d33ba446a",
-      "clientId": "realm-management",
-      "name": "${client_realm-management}",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": [],
-      "webOrigins": [],
-      "notBefore": 0,
-      "bearerOnly": true,
-      "consentRequired": false,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
-      "publicClient": false,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {
-        "realm_client": "true"
-      },
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": false,
-      "nodeReRegistrationTimeout": 0,
-      "defaultClientScopes": [
-        "web-origins",
-        "acr",
-        "profile",
-        "roles",
-        "basic",
-        "email"
-      ],
-      "optionalClientScopes": [
-        "address",
-        "phone",
-        "organization",
-        "offline_access",
-        "microprofile-jwt"
-      ]
     },
     {
       "id": "dc6215b5-e2f9-4413-900d-f91bd26bc9c6",
@@ -1018,8 +1205,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "AUTH_TIME",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "auth_time",
             "jsonType.label": "long"
@@ -1073,6 +1261,7 @@
           "config": {
             "introspection.token.claim": "true",
             "multivalued": "true",
+            "userinfo.token.claim": "true",
             "user.attribute": "foo",
             "id.token.claim": "true",
             "access.token.claim": "true",
@@ -1133,7 +1322,8 @@
           "config": {
             "id.token.claim": "true",
             "introspection.token.claim": "true",
-            "access.token.claim": "true"
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
           }
         }
       ]
@@ -1467,12 +1657,13 @@
           "protocolMapper": "oidc-organization-membership-mapper",
           "consentRequired": false,
           "config": {
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "organization",
-            "jsonType.label": "String",
-            "multivalued": "true"
+            "jsonType.label": "String"
           }
         }
       ]
@@ -1600,7 +1791,99 @@
   "eventsListeners": [
     "jboss-logging"
   ],
-  "enabledEventTypes": [],
+  "enabledEventTypes": [
+    "SEND_RESET_PASSWORD",
+    "UPDATE_CONSENT_ERROR",
+    "GRANT_CONSENT",
+    "VERIFY_PROFILE_ERROR",
+    "REMOVE_TOTP",
+    "REVOKE_GRANT",
+    "UPDATE_TOTP",
+    "LOGIN_ERROR",
+    "CLIENT_LOGIN",
+    "RESET_PASSWORD_ERROR",
+    "UPDATE_CREDENTIAL",
+    "IMPERSONATE_ERROR",
+    "CODE_TO_TOKEN_ERROR",
+    "CUSTOM_REQUIRED_ACTION",
+    "OAUTH2_DEVICE_CODE_TO_TOKEN_ERROR",
+    "RESTART_AUTHENTICATION",
+    "IMPERSONATE",
+    "UPDATE_PROFILE_ERROR",
+    "LOGIN",
+    "OAUTH2_DEVICE_VERIFY_USER_CODE",
+    "UPDATE_PASSWORD_ERROR",
+    "CLIENT_INITIATED_ACCOUNT_LINKING",
+    "OAUTH2_EXTENSION_GRANT",
+    "USER_DISABLED_BY_PERMANENT_LOCKOUT",
+    "REMOVE_CREDENTIAL_ERROR",
+    "TOKEN_EXCHANGE",
+    "AUTHREQID_TO_TOKEN",
+    "LOGOUT",
+    "REGISTER",
+    "DELETE_ACCOUNT_ERROR",
+    "CLIENT_REGISTER",
+    "IDENTITY_PROVIDER_LINK_ACCOUNT",
+    "USER_DISABLED_BY_TEMPORARY_LOCKOUT",
+    "DELETE_ACCOUNT",
+    "UPDATE_PASSWORD",
+    "CLIENT_DELETE",
+    "FEDERATED_IDENTITY_LINK_ERROR",
+    "IDENTITY_PROVIDER_FIRST_LOGIN",
+    "CLIENT_DELETE_ERROR",
+    "VERIFY_EMAIL",
+    "CLIENT_LOGIN_ERROR",
+    "RESTART_AUTHENTICATION_ERROR",
+    "EXECUTE_ACTIONS",
+    "REMOVE_FEDERATED_IDENTITY_ERROR",
+    "TOKEN_EXCHANGE_ERROR",
+    "PERMISSION_TOKEN",
+    "FEDERATED_IDENTITY_OVERRIDE_LINK",
+    "SEND_IDENTITY_PROVIDER_LINK_ERROR",
+    "UPDATE_CREDENTIAL_ERROR",
+    "EXECUTE_ACTION_TOKEN_ERROR",
+    "OAUTH2_EXTENSION_GRANT_ERROR",
+    "SEND_VERIFY_EMAIL",
+    "OAUTH2_DEVICE_AUTH",
+    "EXECUTE_ACTIONS_ERROR",
+    "REMOVE_FEDERATED_IDENTITY",
+    "OAUTH2_DEVICE_CODE_TO_TOKEN",
+    "IDENTITY_PROVIDER_POST_LOGIN",
+    "IDENTITY_PROVIDER_LINK_ACCOUNT_ERROR",
+    "FEDERATED_IDENTITY_OVERRIDE_LINK_ERROR",
+    "OAUTH2_DEVICE_VERIFY_USER_CODE_ERROR",
+    "UPDATE_EMAIL",
+    "REGISTER_ERROR",
+    "REVOKE_GRANT_ERROR",
+    "EXECUTE_ACTION_TOKEN",
+    "LOGOUT_ERROR",
+    "UPDATE_EMAIL_ERROR",
+    "CLIENT_UPDATE_ERROR",
+    "AUTHREQID_TO_TOKEN_ERROR",
+    "INVITE_ORG_ERROR",
+    "UPDATE_PROFILE",
+    "CLIENT_REGISTER_ERROR",
+    "FEDERATED_IDENTITY_LINK",
+    "INVITE_ORG",
+    "SEND_IDENTITY_PROVIDER_LINK",
+    "SEND_VERIFY_EMAIL_ERROR",
+    "RESET_PASSWORD",
+    "CLIENT_INITIATED_ACCOUNT_LINKING_ERROR",
+    "OAUTH2_DEVICE_AUTH_ERROR",
+    "REMOVE_CREDENTIAL",
+    "UPDATE_CONSENT",
+    "REMOVE_TOTP_ERROR",
+    "VERIFY_EMAIL_ERROR",
+    "SEND_RESET_PASSWORD_ERROR",
+    "CLIENT_UPDATE",
+    "CUSTOM_REQUIRED_ACTION_ERROR",
+    "IDENTITY_PROVIDER_POST_LOGIN_ERROR",
+    "UPDATE_TOTP_ERROR",
+    "CODE_TO_TOKEN",
+    "VERIFY_PROFILE",
+    "GRANT_CONSENT_ERROR",
+    "IDENTITY_PROVIDER_FIRST_LOGIN_ERROR"
+  ],
   "adminEventsEnabled": false,
   "adminEventsDetailsEnabled": false,
   "identityProviders": [],
@@ -1650,14 +1933,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "oidc-sha256-pairwise-sub-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "oidc-full-name-mapper",
             "saml-role-list-mapper",
-            "saml-user-attribute-mapper",
+            "oidc-usermodel-attribute-mapper",
+            "oidc-address-mapper",
             "saml-user-property-mapper",
+            "saml-user-attribute-mapper",
             "oidc-usermodel-property-mapper",
-            "oidc-address-mapper"
+            "oidc-sha256-pairwise-sub-mapper",
+            "oidc-full-name-mapper"
           ]
         }
       },
@@ -1701,14 +1984,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "oidc-sha256-pairwise-sub-mapper",
-            "oidc-address-mapper",
-            "oidc-usermodel-property-mapper",
-            "oidc-full-name-mapper",
-            "saml-user-property-mapper",
-            "oidc-usermodel-attribute-mapper",
             "saml-role-list-mapper",
-            "saml-user-attribute-mapper"
+            "oidc-address-mapper",
+            "saml-user-property-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "oidc-usermodel-attribute-mapper",
+            "oidc-usermodel-property-mapper",
+            "saml-user-attribute-mapper",
+            "oidc-full-name-mapper"
           ]
         }
       }
@@ -2500,13 +2783,18 @@
   "firstBrokerLoginFlow": "first broker login",
   "attributes": {
     "cibaBackchannelTokenDeliveryMode": "poll",
-    "cibaExpiresIn": "120",
     "cibaAuthRequestedUserHint": "login_hint",
-    "oauth2DeviceCodeLifespan": "600",
+    "clientOfflineSessionMaxLifespan": "0",
     "oauth2DevicePollingInterval": "5",
-    "parRequestUriLifespan": "60",
+    "clientSessionIdleTimeout": "0",
+    "clientOfflineSessionIdleTimeout": "0",
     "cibaInterval": "5",
-    "realmReusableOtpCode": "false"
+    "realmReusableOtpCode": "false",
+    "cibaExpiresIn": "120",
+    "oauth2DeviceCodeLifespan": "600",
+    "parRequestUriLifespan": "60",
+    "clientSessionMaxLifespan": "0",
+    "organizationsEnabled": "false"
   },
   "keycloakVersion": "26.0.5",
   "userManagedAccessAllowed": false,

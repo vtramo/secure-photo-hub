@@ -37,7 +37,7 @@ pub async fn authentication_middleware_bearer_token(
                     UserInfoEndpoint::new(oidc_config.userinfo_endpoint(), access_token);
                 match user_info_endpoint.fetch_user_info().await {
                     Ok(user_info_response) => {
-                        let user = AuthenticatedUser::from(user_info_response);
+                        let user = AuthenticatedUser::from_user_info_response(&user_info_response, access_token);
                         req.get_session().clear();
                         req.extensions_mut().insert(user);
                         req.extensions_mut().insert(AuthenticationMethod::Bearer);
@@ -146,7 +146,7 @@ pub async fn authentication_middleware_oauth2_cookie(
                     session.insert(OAUTH_SESSION_KEY, OAuthSession::from(&validated_tokens))?;
                     session.insert(
                         USER_SESSION_KEY,
-                        AuthenticatedUser::from(validated_tokens.id_token_claims()),
+                        AuthenticatedUser::from_id_token_claims(validated_tokens.id_token_claims(), validated_tokens.access_token()),
                     )?;
                 } else {
                     log::warn!("Unauthorized");

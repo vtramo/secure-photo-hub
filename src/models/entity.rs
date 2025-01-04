@@ -13,8 +13,10 @@ pub mod album;
 #[derive(sqlx::FromRow, Debug, Eq, PartialEq, Clone)]
 pub struct ImageReferenceEntity {
     pub id: Uuid,
+    pub owner_user_id: Uuid,
     pub url: String,
     pub size: i64,
+    pub visibility: VisibilityEntity,
     pub format: ImageFormatEntity,
     pub created_at: chrono::DateTime<Utc>
 }
@@ -69,6 +71,7 @@ impl From<ImageFormat> for ImageFormatEntity {
 pub enum VisibilityEntity {
     Public,
     Private,
+    Null,
 }
 
 impl From<Visibility> for VisibilityEntity {
@@ -85,6 +88,7 @@ impl fmt::Display for VisibilityEntity {
         let visibility_str = match *self {
             VisibilityEntity::Public => "Public",
             VisibilityEntity::Private => "Private",
+            VisibilityEntity::Null => "NULL",
         };
         write!(f, "{}", visibility_str)
     }
@@ -95,6 +99,7 @@ impl From<VisibilityEntity> for Visibility {
         match value {
             VisibilityEntity::Public => Visibility::Public,
             VisibilityEntity::Private => Visibility::Private,
+            VisibilityEntity::Null => panic!("Visibility::NULL from db"),
         }
     }
 }

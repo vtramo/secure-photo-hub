@@ -82,12 +82,13 @@ impl Photo {
 pub struct UpdatePhoto {
     id: Uuid,
     title: Option<String>,
-    album_id: Option<Uuid>
+    album_id: Option<Uuid>,
+    visibility: Option<Visibility>,
 }
 
 impl UpdatePhoto {
-    pub fn new(id: &Uuid, title: Option<&String>, album_id: Option<&Uuid>) -> Self {
-        Self { id: id.clone(), title: title.cloned(), album_id: album_id.cloned() }
+    pub fn new(id: &Uuid, title: Option<&String>, album_id: Option<&Uuid>, visibility: Option<&Visibility>) -> Self {
+        Self { id: id.clone(), title: title.cloned(), album_id: album_id.cloned(), visibility: visibility.cloned() }
     }
     pub fn id(&self) -> &Uuid {
         &self.id
@@ -97,6 +98,9 @@ impl UpdatePhoto {
     }
     pub fn album_id(&self) -> &Option<Uuid> {
         &self.album_id
+    }
+    pub fn visibility(&self) -> &Option<Visibility> {
+        &self.visibility
     }
 }
 

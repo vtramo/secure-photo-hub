@@ -7,6 +7,10 @@ SET
     album_id = CASE
                 WHEN $2::uuid != uuid_nil() THEN $2
                 ELSE album_id
+               END,
+    visibility = CASE
+                WHEN $4 != 'NULL'::visibility THEN $4
+                ELSE photos.visibility
                END
 FROM images
 WHERE photos.image_id = images.id
@@ -22,7 +26,7 @@ AND (
     photos.title AS "title!",
     photos.description AS "description!",
     photos.visibility AS "visibility!: _",
-    photos.owner_user_id AS "owner_user_id!",
+    photos.owner_user_id AS "photo_owner_user_id!",
     photos.tags AS "tags!: Vec<String>",
     photos.category AS "category!: _",
     photos.album_id AS "album_id?",
@@ -31,6 +35,7 @@ AND (
     photos.created_at AS "photo_created_at!",
 
     images.id AS "image_id!",
+    images.owner_user_id AS "image_owner_user_id!",
     images.url AS "url!",
     images.file_size AS "size!",
     images.format AS "format!: _",
