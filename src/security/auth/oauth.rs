@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
+use async_trait::async_trait;
 
 pub use authorization_request::{
     OAuthAuthorizationRequestState, OAuthResponseType, OAuthSecureAuthorizationRequest,
@@ -11,6 +12,7 @@ pub use token_validator::{
     authorization_check, validate_access_token, validate_id_token, OAuthValidatedTokens,
 };
 pub use user_info_request::{UserInfoEndpoint, UserInfoResponse};
+pub use client_session::OAuthClientSession;
 
 mod access_token_request;
 mod authorization_request;
@@ -182,4 +184,9 @@ impl OAuthAuthorizationResponse {
     pub fn scope(&self) -> &str {
         &self.scope
     }
+}
+
+#[async_trait()]
+pub trait OAuthAccessTokenHolder {
+    async fn get_access_token(&self) -> anyhow::Result<String>;
 }

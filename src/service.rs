@@ -1,5 +1,5 @@
 use uuid::Uuid;
-use crate::models::service::album::{Album, CreateAlbumWithCover};
+use crate::models::service::album::{Album, CreateAlbumWithCover, UpdateAlbum};
 use crate::models::service::image::{ImageTransformOptions, Image};
 use crate::models::service::pagination::Page;
 use crate::models::service::photo::{Photo, UpdatePhoto, UploadPhoto};
@@ -23,6 +23,7 @@ pub trait AlbumService: Clone + Send + Sync + 'static {
     async fn get_all_albums(&self, authenticated_user: &AuthenticatedUser) -> anyhow::Result<Page<Album>>;
     async fn get_album_by_id(&self, authenticated_user: &AuthenticatedUser, id: &Uuid) -> anyhow::Result<Option<Album>>;
     async fn create_album(&self, authenticated_user: &AuthenticatedUser, create_album: &CreateAlbumWithCover) -> anyhow::Result<Album>; 
+    async fn update_album(&self, authenticated_user: &AuthenticatedUser, update_album: &UpdateAlbum) -> anyhow::Result<Album>;
 }
 
 #[async_trait::async_trait]

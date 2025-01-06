@@ -158,3 +158,25 @@ impl CreateAlbum {
         &self.cover_image_format
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct UpdateAlbum {
+    id: Uuid,
+    title: Option<String>,
+    visibility: Option<Visibility>,
+}
+
+impl UpdateAlbum {
+    pub fn new(id: &Uuid, title: Option<&String>, visibility: Option<&Visibility>) -> Self {
+        Self { id: id.clone(), title: title.cloned(), visibility: visibility.cloned() }
+    }
+    pub fn id(&self) -> &Uuid {
+        &self.id
+    }
+    pub fn title(&self) -> &Option<String> {
+        &self.title
+    }
+    pub fn visibility(&self) -> Option<Visibility> {
+        self.visibility
+    }
+}

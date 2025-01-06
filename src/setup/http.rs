@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use actix_session::config::BrowserSession;
 use actix_session::storage::RedisSessionStore;
 use actix_session::SessionMiddleware;
@@ -9,10 +9,11 @@ use actix_web::dev::Server;
 use anyhow::Context;
 
 use crate::setup::Config;
-use crate::{repository, routes, security, service};
+use crate::{routes, security, service};
 use crate::service::image_storage::AwsS3Client;
 use crate::repository::PostgresDatabase;
-use crate::security::authz::photo::PhotoPolicyEnforcerKc;
+use crate::security::auth::oauth::OAuthClientSession;
+use crate::security::authz::{PhotoPolicyEnforcerKc, AlbumPolicyEnforcerKc, KcAuthzService};
 use crate::service::{AlbumService, PhotoService};
 
 #[derive(Debug, Clone)]
@@ -58,12 +59,17 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
         .context("Failed to connect to Redis for session management")?;
     let oauth_redirect_uri_path = config.oidc_config().redirect_uri().path().to_string();
 
+    let authz_oauth_client_session = OAuthClientSession::start_session_from_oidc_config(&config.oidc_config).await?;
+    let kc_authz_service = Arc::new(KcAuthzService::new(config.oidc_config(), authz_oauth_client_session));
+    let photo_policy_enforcer = Arc::new(PhotoPolicyEnforcerKc::new(Arc::clone(&kc_authz_service)));
+    let album_policy_enforcer = Arc::new(AlbumPolicyEnforcerKc::new(Arc::clone(&kc_authz_service)));
+
     let aws_s3_client = Arc::new(AwsS3Client::new(&config.aws_s3_config));
-    let database = Arc::new(repository::PostgresDatabase::connect_with_db_config(&config.database_config).await?);
-    let photo_policy_enforcer = Arc::new(security::authz::photo::PhotoPolicyEnforcerKc::new(&config.oidc_config));
+    let database = Arc::new(PostgresDatabase::connect_with_db_config(&config.database_config).await?);
     let photo_service = service::photo::PhotoServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client), Arc::clone(&photo_policy_enforcer));
-    let album_service = service::album::AlbumServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client));
+    let album_service = service::album::AlbumServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client), Arc::clone(&album_policy_enforcer));
     let image_service = service::image::ImageServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client));
+    
     let photo_routes_state = PhotoRoutesState { photo_service: Arc::new(photo_service) };
     let album_routes_state = AlbumRoutesState { album_service: Arc::new(album_service) };
     let image_routes_state = ImageRoutesState { image_service: Arc::new(image_service) };
@@ -119,15 +125,15 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
             )
             .route(
                 routes::album::ALBUMS_ROUTE,
-                web::get().to(routes::album::get_albums::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client>>),
+                web::get().to(routes::album::get_albums::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client, AlbumPolicyEnforcerKc>>),
             )
             .route(
                 routes::album::ALBUM_BY_ID_ROUTE,
-                web::get().to(routes::album::get_album_by_id::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client>>),
+                web::get().to(routes::album::get_album_by_id::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client, AlbumPolicyEnforcerKc>>),
             )
             .route(
                 routes::album::ALBUMS_ROUTE,
-                web::post().to(routes::album::post_albums::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client>>),
+                web::post().to(routes::album::post_albums::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client, AlbumPolicyEnforcerKc>>),
             )
             .route(
                 routes::image::IMAGE_BY_ID_ROUTE,

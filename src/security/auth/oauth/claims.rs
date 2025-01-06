@@ -5,17 +5,17 @@ pub struct IdTokenClaims {
     acr: String,
     at_hash: String,
     aud: String,
-    auth_time: u64,
+    auth_time: Option<u64>,
     azp: String,
-    email: String,
+    email: Option<String>,
     email_verified: bool,
     exp: u64,
-    family_name: String,
-    given_name: String,
+    family_name: Option<String>,
+    given_name: Option<String>,
     iat: u64,
     iss: String,
     jti: String,
-    name: String,
+    name: Option<String>,
     nonce: Option<String>,
     preferred_username: String,
     sid: String,
@@ -36,16 +36,16 @@ impl IdTokenClaims {
         &self.aud
     }
 
-    pub fn auth_time(&self) -> u64 {
-        self.auth_time
+    pub fn auth_time(&self) -> Option<u64> {
+        self.auth_time.clone()
     }
 
     pub fn azp(&self) -> &str {
         &self.azp
     }
 
-    pub fn email(&self) -> &str {
-        &self.email
+    pub fn email(&self) -> Option<String> {
+        self.email.clone()
     }
 
     pub fn email_verified(&self) -> bool {
@@ -56,12 +56,12 @@ impl IdTokenClaims {
         self.exp
     }
 
-    pub fn family_name(&self) -> &str {
-        &self.family_name
+    pub fn family_name(&self) -> Option<String> {
+        self.family_name.clone()
     }
 
-    pub fn given_name(&self) -> &str {
-        &self.given_name
+    pub fn given_name(&self) -> Option<String> {
+        self.given_name.clone()
     }
 
     pub fn iat(&self) -> u64 {
@@ -76,8 +76,8 @@ impl IdTokenClaims {
         &self.jti
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn name(&self) -> Option<String> {
+        self.name.clone()
     }
 
     pub fn nonce(&self) -> &Option<String> {

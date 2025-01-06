@@ -1,40 +1,46 @@
 use std::sync::Arc;
 use uuid::Uuid;
-use crate::models::service::album::{Album, CreateAlbum, CreateAlbumWithCover};
+use crate::models::service::album::{Album, CreateAlbum, CreateAlbumWithCover, UpdateAlbum};
 use crate::models::service::pagination::Page;
+use crate::models::service::photo::Photo;
 use crate::repository::album_repository::AlbumRepository;
 use crate::security::auth::user::AuthenticatedUser;
+use crate::security::authz::AlbumPolicyEnforcer;
 use crate::service::AlbumService;
 use crate::service::image_storage::ImageStorage;
 
 #[derive(Debug, Clone)]
-pub struct AlbumServiceImpl<R, I>
+pub struct AlbumServiceImpl<R, I, P>
     where
         R: AlbumRepository,
         I: ImageStorage,
+        P: AlbumPolicyEnforcer,
 {
     album_repository: Arc<R>,
     image_repository: Arc<I>,
+    album_policy_enforcer: Arc<P>,
 }
 
-impl<R, I> AlbumServiceImpl<R, I> 
+impl<R, I, P> AlbumServiceImpl<R, I, P> 
     where
         R: AlbumRepository,
         I: ImageStorage,
+        P: AlbumPolicyEnforcer,
 {
     pub fn album_repository(&self) -> Arc<R> {
         self.album_repository.clone()
     }
-    pub fn new(album_repository: Arc<R>, image_repository: Arc<I>) -> Self {
-        Self { album_repository, image_repository }
+    pub fn new(album_repository: Arc<R>, image_repository: Arc<I>, album_policy_enforcer: Arc<P>) -> Self {
+        Self { album_repository, image_repository, album_policy_enforcer }
     }
 }
 
 #[async_trait::async_trait]
-impl<R, I> AlbumService for AlbumServiceImpl<R, I>
+impl<R, I, P> AlbumService for AlbumServiceImpl<R, I, P>
     where
         R: AlbumRepository,
         I: ImageStorage,
+        P: AlbumPolicyEnforcer,
 {
     async fn get_all_albums(&self, _authenticated_user: &AuthenticatedUser) -> anyhow::Result<Page<Album>> {
         let albums = self.album_repository()
@@ -48,11 +54,21 @@ impl<R, I> AlbumService for AlbumServiceImpl<R, I>
         Ok(Page::new(albums, 0, tot_albums as u32))
     }
 
-    async fn get_album_by_id(&self, _authenticated_user: &AuthenticatedUser, id: &Uuid) -> anyhow::Result<Option<Album>> {
-        Ok(self.album_repository()
+    async fn get_album_by_id(&self, authenticated_user: &AuthenticatedUser, id: &Uuid) -> anyhow::Result<Option<Album>> {
+        let album_option = self
+            .album_repository
             .find_album_by_id(id)
             .await?
-            .map(Album::from))
+            .map(Album::from);
+
+        if let Some(photo) = &album_option {
+            let can_view_album = self.album_policy_enforcer.can_view_album(authenticated_user, photo).await?;
+            if !can_view_album {
+                return Err(anyhow::anyhow!("Unauthorized to view album with id: {}", id).into()); // TODO: Error Handling
+            }
+        }
+
+        Ok(album_option)
     }
 
     async fn create_album(
@@ -60,6 +76,11 @@ impl<R, I> AlbumService for AlbumServiceImpl<R, I>
         authenticated_user: &AuthenticatedUser,
         create_album_with_cover: &CreateAlbumWithCover
     ) -> anyhow::Result<Album> {
+        let can_edit_album = self.album_policy_enforcer.can_create_album(authenticated_user).await?;
+        if !can_edit_album {
+            return Err(anyhow::anyhow!("Unauthorized to create album")); // TODO: Error Handling
+        }
+        
         let upload_cover_image = create_album_with_cover.upload_image();
         let (created_image_id, created_image_url) = self.image_repository.upload_image(upload_cover_image).await?;
         
@@ -76,6 +97,22 @@ impl<R, I> AlbumService for AlbumServiceImpl<R, I>
         
         self.album_repository()
             .create_album(&create_album)
+            .await
+            .map(Album::from)
+    }
+
+    async fn update_album(
+        &self, 
+        authenticated_user: &AuthenticatedUser, 
+        update_album: &UpdateAlbum
+    ) -> anyhow::Result<Album> {
+        let can_edit_album = self.album_policy_enforcer.can_edit_album(authenticated_user, update_album).await?;
+        if !can_edit_album {
+            return Err(anyhow::anyhow!("Unauthorized to edit album with id {}", update_album.id()).into()); // TODO: Error Handling
+        }
+        
+        self.album_repository
+            .update_album(update_album)
             .await
             .map(Album::from)
     }

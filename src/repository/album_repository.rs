@@ -1,18 +1,19 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use sqlx::{Acquire, PgConnection, query_file_as};
 use uuid::Uuid;
 
 use crate::models::entity::{ImageReferenceEntity, VisibilityEntity};
 use crate::models::entity::album::{AlbumCoverImageReferenceEntity, AlbumEntity, AlbumNoCoverImageReferenceEntity};
-use crate::models::service::album::CreateAlbum;
+use crate::models::service::album::{CreateAlbum, UpdateAlbum};
 use crate::models::service::image::ImageReference;
-use crate::repository::{build_image_reference_url, PostgresDatabase};
+use crate::repository::{build_image_reference_url, NULL, PostgresDatabase};
 
 #[async_trait::async_trait]
 pub trait AlbumRepository: Clone + Send + Sync + 'static {
     async fn create_album(&self, album: &CreateAlbum) -> anyhow::Result<AlbumEntity>;
     async fn find_all_albums(&self) -> anyhow::Result<Vec<AlbumEntity>>;
     async fn find_album_by_id(&self, id: &Uuid) -> anyhow::Result<Option<AlbumEntity>>;
+    async fn update_album(&self, update_album: &UpdateAlbum) -> anyhow::Result<AlbumEntity>;
 }
 
 #[async_trait::async_trait]
@@ -75,6 +76,32 @@ impl AlbumRepository for PostgresDatabase {
                 .await?;
         
         Ok(option_album.map(AlbumEntity::from))
+    }
+
+    async fn update_album(&self, update_album: &UpdateAlbum) -> anyhow::Result<AlbumEntity> {
+        let mut conn = self.acquire()
+            .await
+            .with_context(|| "Unable to acquire a database connection".to_string())?;
+
+        let album_id = update_album.id();
+        let title = update_album.title().clone().unwrap_or(String::from(NULL));
+        let visibility = update_album.visibility().clone().map(VisibilityEntity::from).unwrap_or(VisibilityEntity::Null);
+        
+        let updated_album_entity: AlbumCoverImageReferenceEntity =
+            query_file_as!(
+                AlbumCoverImageReferenceEntity, 
+                "queries/postgres/update_album.sql",
+                album_id,
+                title,
+                visibility as _,
+            ).fetch_all(&mut *conn)
+                .await.map_err(|err| anyhow!("Unable to update an album {}", err))?
+                .get(0)
+                .cloned()
+                .take()
+                .ok_or(anyhow!("Unable to update an album"))?;
+        
+        Ok(AlbumEntity::from(updated_album_entity))
     }
 }
 

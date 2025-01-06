@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use anyhow::anyhow;
 use url::Url;
 use uuid::Uuid;
 use crate::models::service::pagination::Page;
@@ -82,14 +81,11 @@ impl<R, I, P> PhotoService for PhotoServiceImpl<R, I, P>
         authenticated_user: &AuthenticatedUser,
         upload_photo: &UploadPhoto,
     ) -> anyhow::Result<Photo> {
-        dbg!("Creating a photo..");
         let can_create_photo = self.photo_policy_enforcer.can_create_photo(authenticated_user).await?;
         if !can_create_photo {
             return Err(anyhow::anyhow!("Unauthorized to create a photo").into()); // TODO: Error Handling
         }
 
-        dbg!("Exit policy   ");
-        
         let upload_image = upload_photo.upload_image();
         let (created_image_id, created_image_url) = self.image_repository.upload_image(upload_image).await?;
 
@@ -136,6 +132,7 @@ mod tests {
     use crate::models::service::image::{Image, UploadImage};
     use crate::models::service::Visibility;
     use crate::repository::PostgresDatabase;
+    use crate::security::auth::oauth::OAuthAccessTokenHolder;
 
     use super::*;
 
@@ -153,6 +150,13 @@ mod tests {
 
         async fn download_image(&self, _id: &Uuid) -> anyhow::Result<Option<Image>> {
             Ok(None)
+        }
+    }
+
+    #[async_trait()]
+    impl OAuthAccessTokenHolder for MockPhotoPolicyEnforcer {
+        async fn get_access_token(&self) -> anyhow::Result<String> {
+            Ok(":)".to_string())
         }
     }
 

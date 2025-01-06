@@ -20,14 +20,14 @@ impl OAuthRefreshTokenRequest {
         refresh_token_endpoint: &Url,
         client_id: &str,
         client_secret: &str,
-        scope: &Vec<String>,
+        scope: &[String],
         refresh_token: &str,
     ) -> Self {
         Self {
             refresh_token_endpoint: refresh_token_endpoint.clone(),
             client_id: client_id.to_string(),
             client_secret: client_secret.to_string(),
-            scope: scope.clone(),
+            scope: scope.to_vec(),
             refresh_token: refresh_token.to_string(),
         }
     }

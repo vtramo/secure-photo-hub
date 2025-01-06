@@ -75,10 +75,10 @@ impl AuthenticatedUser {
         Self::new(
             &Uuid::parse_str(&id_token_claims.sub().to_string()).expect(""),
             id_token_claims.preferred_username(),
-            id_token_claims.given_name(),
-            id_token_claims.family_name(),
-            id_token_claims.name(),
-            id_token_claims.email(),
+            &id_token_claims.given_name().expect("An user must have a given_name!"),
+            &id_token_claims.family_name().expect("An user must have a family_name!"),
+            &id_token_claims.name().expect("An user must have a name!"),
+            &id_token_claims.email().expect("An user must have an email!"),
             id_token_claims.email_verified(),
             access_token,
         )
