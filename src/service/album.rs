@@ -2,7 +2,6 @@ use std::sync::Arc;
 use uuid::Uuid;
 use crate::models::service::album::{Album, CreateAlbum, CreateAlbumWithCover, UpdateAlbum};
 use crate::models::service::pagination::Page;
-use crate::models::service::photo::Photo;
 use crate::repository::album_repository::AlbumRepository;
 use crate::security::auth::user::AuthenticatedUser;
 use crate::security::authz::AlbumPolicyEnforcer;
@@ -42,13 +41,15 @@ impl<R, I, P> AlbumService for AlbumServiceImpl<R, I, P>
         I: ImageStorage,
         P: AlbumPolicyEnforcer,
 {
-    async fn get_all_albums(&self, _authenticated_user: &AuthenticatedUser) -> anyhow::Result<Page<Album>> {
+    async fn get_all_albums(&self, authenticated_user: &AuthenticatedUser) -> anyhow::Result<Page<Album>> {
         let albums = self.album_repository()
             .find_all_albums()
             .await?
             .into_iter()
             .map(Album::from)
             .collect::<Vec<_>>();
+
+        let albums = self.album_policy_enforcer.filter_albums_by_view_permission(authenticated_user, albums).await?;
 
         let tot_albums = albums.len();
         Ok(Page::new(albums, 0, tot_albums as u32))
@@ -106,7 +107,14 @@ impl<R, I, P> AlbumService for AlbumServiceImpl<R, I, P>
         authenticated_user: &AuthenticatedUser, 
         update_album: &UpdateAlbum
     ) -> anyhow::Result<Album> {
-        let can_edit_album = self.album_policy_enforcer.can_edit_album(authenticated_user, update_album).await?;
+        let album_id = update_album.id();
+        let album = self.album_repository
+            .find_album_by_id(album_id)
+            .await?
+            .map(Album::from)
+            .ok_or(anyhow::anyhow!("Not found"))?;
+        
+        let can_edit_album = self.album_policy_enforcer.can_edit_album(authenticated_user, &album, update_album).await?;
         if !can_edit_album {
             return Err(anyhow::anyhow!("Unauthorized to edit album with id {}", update_album.id()).into()); // TODO: Error Handling
         }

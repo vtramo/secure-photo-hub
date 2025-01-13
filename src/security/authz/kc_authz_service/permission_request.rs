@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 use uuid::Uuid;
 use crate::security::authz::kc_authz_service::AuthorizationScope;
+use crate::security::authz::kc_authz_service::permission_request::ResponseMode::Decision;
 
 #[derive(Debug)]
 pub struct AuthzPermissionRequest<T>
@@ -62,14 +63,17 @@ impl<T> AuthzPermissionRequest<T>
 
     pub async fn decision_response_mode_send(&self) -> anyhow::Result<bool> {
         let client = reqwest::Client::new();
-        let decision = client.post(&self.access_token_endpoint.to_string())
-            .form(&self.to_params(ResponseMode::Decision)?)
+        let decision_response = client.post(&self.access_token_endpoint.to_string())
+            .form(&self.to_params(Decision)?)
             .send()
             .await?
-            .json::<Decision>()
+            .json::<DecisionResponse>()
             .await?;
-
-        Ok(decision.result)
+        
+        Ok(match decision_response {
+            DecisionResponse::Result { result } => result,
+            DecisionResponse::NotAuthorized { .. } => false
+        })
     }
     
     pub async fn permissions_response_mode_send(&self) -> anyhow::Result<Permissions> {
@@ -114,8 +118,10 @@ impl Display for ResponseMode {
 }
 
 #[derive(Deserialize)]
-struct Decision {
-    result: bool
+#[serde(untagged)]
+enum DecisionResponse {
+    Result { result: bool },
+    NotAuthorized { error: String, error_description: String }
 }
 
 #[derive(Deserialize, Clone, Debug)]

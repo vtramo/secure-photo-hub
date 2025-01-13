@@ -81,12 +81,16 @@ impl From<ImageFormatEntity> for ImageFormat {
 #[derive(Debug, Clone)]
 pub struct UploadImage {
     filename: String,
+    visibility: Visibility,
     bytes: Vec<u8>,
     format: ImageFormat,
     size: usize,
 }
 
 impl UploadImage {
+    pub fn new(filename: &str, bytes: Vec<u8>, format: ImageFormat, visibility: Visibility, size: usize) -> Self {
+        Self { filename: filename.to_string(), bytes, format, visibility, size }
+    }
     pub fn bytes(&self) -> &Vec<u8> {
         &self.bytes
     }
@@ -96,18 +100,13 @@ impl UploadImage {
     pub fn size(&self) -> usize {
         self.size
     }
-    pub fn new(filename: &str, bytes: Vec<u8>, format: ImageFormat, size: usize) -> Self {
-        Self { filename: filename.to_string(), bytes, format, size }
-    }
     pub fn filename(&self) -> &str {
         &self.filename
     }
-}
-
-impl TryFrom<TempFile> for UploadImage {
-    type Error = UploadImageError;
-
-    fn try_from(mut temp_file: TempFile) -> Result<Self, Self::Error> {
+    pub fn visibility(&self) -> Visibility {
+        self.visibility
+    }
+    pub fn try_from(mut temp_file: TempFile, visibility: Visibility) -> Result<Self, UploadImageError> {
         match temp_file.content_type {
             None => Err(UploadImageError::MissingContentType),
             Some(content_type) => match content_type.type_() {
@@ -127,6 +126,7 @@ impl TryFrom<TempFile> for UploadImage {
                         filename: file_name,
                         bytes,
                         format,
+                        visibility,
                         size,
                     })
                 },
@@ -150,13 +150,14 @@ pub struct Image {
     id: Uuid,
     filename: String,
     format: ImageFormat,
+    visibility: Visibility,
     bytes: Vec<u8>,
     size: u32,
 }
 
 impl Image {
-    pub fn new(id: &Uuid, filename: &str, format: &ImageFormat, bytes: Vec<u8>, size: u32) -> Self {
-        Self { id: id.clone(), filename: filename.to_string(), format: format.clone(), bytes, size }
+    pub fn new(id: &Uuid, filename: &str, format: &ImageFormat, visibility: &Visibility, bytes: Vec<u8>, size: u32) -> Self {
+        Self { id: id.clone(), filename: filename.to_string(), visibility: *visibility, format: format.clone(), bytes, size }
     }
     pub fn id(&self) -> Uuid {
         self.id
@@ -175,6 +176,9 @@ impl Image {
     }
     pub fn filename(&self) -> &str {
         &self.filename
+    }
+    pub fn visibility(&self) -> Visibility {
+        self.visibility
     }
 }
 

@@ -86,10 +86,10 @@ impl AlbumRepository for PostgresDatabase {
         let album_id = update_album.id();
         let title = update_album.title().clone().unwrap_or(String::from(NULL));
         let visibility = update_album.visibility().clone().map(VisibilityEntity::from).unwrap_or(VisibilityEntity::Null);
-        
+
         let updated_album_entity: AlbumCoverImageReferenceEntity =
             query_file_as!(
-                AlbumCoverImageReferenceEntity, 
+                AlbumCoverImageReferenceEntity,
                 "queries/postgres/update_album.sql",
                 album_id,
                 title,
@@ -100,7 +100,7 @@ impl AlbumRepository for PostgresDatabase {
                 .cloned()
                 .take()
                 .ok_or(anyhow!("Unable to update an album"))?;
-        
+
         Ok(AlbumEntity::from(updated_album_entity))
     }
 }
@@ -239,7 +239,7 @@ mod tests {
         assert_eq!(created_album.owner_user_id, owner_user_id);
 
         let album_id = created_album.id;
-        let update_photo = UpdatePhoto::new(&created_photo.id, None, Some(&album_id));
+        let update_photo = UpdatePhoto::new(&created_photo.id, None, Some(&album_id), None);
         let moved_photo = pg.update_photo(&update_photo).await.unwrap();
         assert_eq!(moved_photo.album_id, Some(album_id));
     }

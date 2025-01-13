@@ -35,25 +35,25 @@ impl AuthzResourceSetRequest {
     pub async fn send(&self) -> anyhow::Result<Vec<Uuid>> {
         let client = reqwest::Client::new();
         
-        let resource_set_response = dbg!(client
+        let resource_set_response = client
             .get(&self.resource_set_endpoint.to_string())
             .query(&self.to_params()?)
             .bearer_auth(self.access_token.to_string())
             .send()
             .await?
             .json::<Vec<Uuid>>()
-            .await?);
+            .await?;
         
         Ok(resource_set_response)
     }
     
     fn to_params(&self) -> anyhow::Result<Vec<(&'static str, String)>> {
-        dbg!(Ok(vec![
+        Ok(vec![
             (Self::MATCHING_URI, self.matching_uri.to_string()),
             (Self::URI, self.uri.to_string()),
             (Self::DEEP, false.to_string()),
             (Self::MAX, self.max.to_string()),
-        ]))
+        ])
     }
 }
 

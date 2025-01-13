@@ -1,12 +1,12 @@
 UPDATE photos
 SET
     title = CASE
-               WHEN $3::text IS NOT NULL THEN $3
-               ELSE title
+               WHEN $3::text != 'NULL'::text THEN $3
+               ELSE photos.title
             END,
     album_id = CASE
                 WHEN $2::uuid != uuid_nil() THEN $2
-                ELSE album_id
+                ELSE photos.album_id
                END,
     visibility = CASE
                 WHEN $4 != 'NULL'::visibility THEN $4

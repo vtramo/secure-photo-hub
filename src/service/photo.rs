@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use url::Url;
 use uuid::Uuid;
+use crate::models::service::album::Album;
 use crate::models::service::pagination::Page;
 use crate::models::service::photo::{CreatePhoto, Photo, UpdatePhoto, UploadPhoto};
 use crate::service::PhotoService;
@@ -43,13 +44,15 @@ impl<R, I, P> PhotoService for PhotoServiceImpl<R, I, P>
         I: ImageStorage,
         P: PhotoPolicyEnforcer
 {
-    async fn get_all_photos(&self, _authenticated_user: &AuthenticatedUser) -> anyhow::Result<Page<Photo>> {
+    async fn get_all_photos(&self, authenticated_user: &AuthenticatedUser) -> anyhow::Result<Page<Photo>> {
         let photos = self.photo_repository
             .find_all_photos(30, 0) // TODO: add pagination
             .await?
             .into_iter()
             .map(Photo::from)
             .collect::<Vec<_>>();
+
+        let photos = self.photo_policy_enforcer.filter_photos_by_view_permission(authenticated_user, photos).await?;
 
         let tot_photos = photos.len();
         Ok(Page::new(photos, 0, tot_photos as u32))
@@ -111,7 +114,15 @@ impl<R, I, P> PhotoService for PhotoServiceImpl<R, I, P>
         authenticated_user: &AuthenticatedUser, 
         update_photo: &UpdatePhoto
     ) -> anyhow::Result<Photo> {
-        let can_edit_photo = self.photo_policy_enforcer.can_edit_photo(authenticated_user, update_photo).await?;
+        let photo_id = update_photo.id();
+        
+        let photo = self.photo_repository
+            .find_photo_by_id(&photo_id)
+            .await?
+            .map(Photo::from)
+            .ok_or(anyhow::anyhow!("Not found"))?;
+        
+        let can_edit_photo = self.photo_policy_enforcer.can_edit_photo(authenticated_user, &photo, update_photo).await?;
         if !can_edit_photo {
             return Err(anyhow::anyhow!("Unauthorized to edit photo with id {}", update_photo.id()).into()); // TODO: Error Handling
         }
@@ -170,8 +181,12 @@ mod tests {
             Ok(true)
         }
 
-        async fn can_edit_photo(&self, _authenticated_user: &AuthenticatedUser, _update_photo: &UpdatePhoto) -> anyhow::Result<bool> {
+        async fn can_edit_photo(&self, _authenticated_user: &AuthenticatedUser, _photo: &Photo, _update_photo: &UpdatePhoto) -> anyhow::Result<bool> {
             Ok(true)
+        }
+
+        async fn filter_photos_by_view_permission<'a>(&self, authenticated_user: &AuthenticatedUser, photos: Vec<Photo>) -> anyhow::Result<Vec<Photo>> {
+            Ok(photos)
         }
     }
 
@@ -193,7 +208,7 @@ mod tests {
             "category".to_string(),
             vec!["tag".to_string(), "tag2".to_string()],
             Visibility::Public,
-            UploadImage::new("", vec![], ImageFormat::Png, 0),
+            UploadImage::new("", vec![], ImageFormat::Png, Visibility::Private, 0),
         );
 
         let created_photo = photo_service.create_photo(&authenticated_user, &upload_photo).await.unwrap();

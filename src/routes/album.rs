@@ -2,11 +2,13 @@ use actix_multipart::form::MultipartForm;
 use actix_web::{HttpResponse, Responder, web};
 use uuid::Uuid;
 
-use crate::models::api::album::{AlbumApi, CreateAlbumApi};
-use crate::models::service::album::CreateAlbumWithCover;
+use crate::models::api::album::{AlbumApi, CreateAlbumApi, PatchAlbumApi};
+use crate::models::api::photo::{PatchPhotoApi, PhotoApi};
+use crate::models::service::album::{CreateAlbumWithCover, UpdateAlbum};
+use crate::models::service::photo::UpdatePhoto;
 use crate::security::auth::user::AuthenticatedUser;
 use crate::service::AlbumService;
-use crate::setup::AlbumRoutesState;
+use crate::setup::{AlbumRoutesState, PhotoRoutesState};
 
 pub const ALBUMS_ROUTE: &'static str = "/albums";
 pub const ALBUM_BY_ID_ROUTE: &'static str = "/albums/{id}";
@@ -56,4 +58,19 @@ pub async fn get_albums<AS: AlbumService>(
         .map::<AlbumApi>();
     
     HttpResponse::Ok().json(albums)
+}
+
+pub async fn patch_album<AS: AlbumService>(
+    authenticated_user: AuthenticatedUser,
+    album_id: web::Path<Uuid>,
+    patch_album_api: web::Json<PatchAlbumApi>,
+    app_state: web::Data<AlbumRoutesState<AS>>,
+) -> impl Responder {
+    app_state
+        .get_ref()
+        .album_service()
+        .update_album(&authenticated_user, &UpdateAlbum::from(album_id.into_inner(), patch_album_api.into_inner()))
+        .await
+        .map(|album| HttpResponse::Ok().json(AlbumApi::from(album)))
+        .unwrap_or(HttpResponse::NotFound().finish()) // TODO: error handling
 }

@@ -5,6 +5,7 @@ use aws_sdk_s3::Client;
 use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 use crate::models::service::image::{Image, UploadImage};
+use crate::models::service::Visibility;
 use crate::setup::AwsS3Config;
 
 #[async_trait::async_trait]
@@ -52,6 +53,7 @@ impl ImageStorage for AwsS3Client {
             id,
             &image_metadata.filename,
             &image_metadata.format,
+            &image_metadata.visibility,
             bytes,
             image_metadata.size as u32,
         )))
@@ -112,6 +114,7 @@ impl AwsS3Client {
 pub struct ImageMetadata {
     pub filename: String,
     pub format: ImageFormat,
+    pub visibility: Visibility,
     pub size: usize,
 }
 
@@ -120,6 +123,7 @@ impl From<&UploadImage> for ImageMetadata {
         Self {
             filename: upload_image.filename().to_string(),
             format: upload_image.format(),
+            visibility: upload_image.visibility(),
             size: upload_image.size(),
         }
     }

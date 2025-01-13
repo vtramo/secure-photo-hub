@@ -53,7 +53,7 @@ impl<IR, IU> ImageServiceImpl<IR, IU>
         let image_size = image_bytes.len();
         dyn_image.write_to(&mut Cursor::new(&mut image_bytes), ImageFormat::Png)?;
         
-        Ok(Image::new(&image.id(), image.filename(), &image_format, image_bytes, image_size as u32))
+        Ok(Image::new(&image.id(), image.filename(), &image_format, &image.visibility(), image_bytes, image_size as u32))
     }
 }
 

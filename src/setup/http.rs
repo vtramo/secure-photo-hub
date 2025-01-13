@@ -132,6 +132,10 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
                 web::get().to(routes::album::get_album_by_id::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client, AlbumPolicyEnforcerKc>>),
             )
             .route(
+                routes::album::ALBUM_BY_ID_ROUTE,
+                web::patch().to(routes::album::patch_album::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client, AlbumPolicyEnforcerKc>>),
+            )
+            .route(
                 routes::album::ALBUMS_ROUTE,
                 web::post().to(routes::album::post_albums::<service::album::AlbumServiceImpl<PostgresDatabase, AwsS3Client, AlbumPolicyEnforcerKc>>),
             )

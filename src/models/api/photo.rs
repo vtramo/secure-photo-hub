@@ -69,7 +69,8 @@ impl TryFrom<UploadPhotoApi> for UploadPhoto {
 
     fn try_from(upload_photo_api: UploadPhotoApi) -> Result<Self, Self::Error> {
         let UploadPhotoApi { file: image, metadata } = upload_photo_api;
-        let upload_image = UploadImage::try_from(image)?;
+        let visibility = Visibility::from(metadata.0.visibility);
+        let upload_image = UploadImage::try_from(image, visibility)?;
         let album_id = metadata.0.album_id
             .map(|uuid_str| Uuid::parse_str(&uuid_str))
             .transpose()
@@ -81,7 +82,7 @@ impl TryFrom<UploadPhotoApi> for UploadPhoto {
             metadata.0.description,
             metadata.0.category,
             metadata.0.tags,
-            Visibility::from(metadata.0.visibility),
+            visibility,
             upload_image,
         ))
     }
