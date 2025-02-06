@@ -71,4 +71,4 @@ data:
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
 
-kubectl apply -f kind/ingress.yaml kind/kind-host.yaml
+kubectl apply -f ingress.yaml kind-host.yaml

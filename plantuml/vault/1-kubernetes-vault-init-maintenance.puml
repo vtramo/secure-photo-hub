@@ -1,0 +1,16 @@
+@startuml
+hide footbox
+
+actor "Security Operator" as SecurityOperator
+participant "Vault Hashicorp" as Vault
+
+SecurityOperator -> Vault: 1. Kubernetes Pub CA Cert
+note right: Comunica il CA Certificate usato per comunicare con l'API di Kubernetes
+
+SecurityOperator -> Vault: 2. Defines Roles
+note right: Definisce i ruoli all'interno di Vault
+
+SecurityOperator -> Vault: 3. Define Policy based on Roles
+note right: Definisce le policy basate sui ruoli definiti
+
+@enduml
