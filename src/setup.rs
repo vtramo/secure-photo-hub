@@ -34,12 +34,12 @@ mod utils;
 mod logging;
 
 const CONFIG_LOCATION_ENV_VAR: &'static str = "CONFIG_LOCATION";
-const VAULT_SECRETS_LOCATION_ENV_VAR: &'static str = "VAULT_SECRETS_LOCATION";
+const SECRETS_LOCATION_ENV_VAR: &'static str = "SECRETS_LOCATION";
 const SERVER_PORT_ENV_VAR: &'static str = "SERVER_PORT";
 const SERVER_PORT_FIELD: &'static str = "server.port";
 const APPLICATION_PROPERTIES: LazyLock<&Path> =
     LazyLock::new(|| Path::new("resources/application-properties.yaml"));
-const VAULT_SECRETS: LazyLock<&Path> = LazyLock::new(|| Path::new("resources/vault-secrets.yaml"));
+const SECRETS: LazyLock<&Path> = LazyLock::new(|| Path::new("../resources/application-secrets.yaml"));
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -69,10 +69,10 @@ pub async fn spawn_app() -> anyhow::Result<Server> {
 
 async fn setup() -> anyhow::Result<Config> {
     let application_properties_path = get_application_properties_path();
-    let vault_secrets_path = get_vault_secrets_path();
+    let secrets_path = get_secrets_path();
     let application_properties =
         read_to_string(&application_properties_path).unwrap_or("x:|".to_string());
-    let secrets = read_to_string(&vault_secrets_path).unwrap_or("x:|".to_string());
+    let secrets = read_to_string(&secrets_path).unwrap_or("x:|".to_string());
 
     let root_application_properties = YamlLoader::load_from_str(&application_properties)
         .context("Failed to parse YAML from application properties")?
@@ -80,17 +80,17 @@ async fn setup() -> anyhow::Result<Config> {
         .cloned()
         .context("Failed to parse YAML from application properties")?;
 
-    let root_vault_secrets = YamlLoader::load_from_str(&secrets)
+    let root_secrets = YamlLoader::load_from_str(&secrets)
         .unwrap_or(vec![])
         .get(0)
         .cloned()
         .unwrap_or(Yaml::Null);
 
-    let oidc_config = setup_oidc_config(&root_application_properties, &root_vault_secrets).await?;
+    let oidc_config = setup_oidc_config(&root_application_properties, &root_secrets).await?;
     let redis_config = setup_redis_config(&root_application_properties)?;
-    let aws_s3_config = setup_aws_s3_config(&root_vault_secrets).await?;
+    let aws_s3_config = setup_aws_s3_config(&root_secrets).await?;
     let server_port = get_server_port(&root_application_properties);
-    let database_config = setup_database_config(&application_properties_path, &vault_secrets_path)?;
+    let database_config = setup_database_config(&application_properties_path, &secrets_path)?;
 
     Ok(Config {
         oidc_config,
@@ -115,6 +115,6 @@ fn get_application_properties_path() -> String {
         .unwrap_or(APPLICATION_PROPERTIES.to_str().unwrap().to_string())
 }
 
-fn get_vault_secrets_path() -> String {
-    env::var(VAULT_SECRETS_LOCATION_ENV_VAR).unwrap_or(VAULT_SECRETS.to_str().unwrap().to_string())
+fn get_secrets_path() -> String {
+    env::var(SECRETS_LOCATION_ENV_VAR).unwrap_or(SECRETS.to_str().unwrap().to_string())
 }

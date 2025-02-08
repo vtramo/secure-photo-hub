@@ -2,6 +2,7 @@
 
 set -o errexit
 
+# 1. Create registry container unless it already exists
 reg_name='kind-registry'
 reg_port='5001'
 if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)" != 'true' ]; then
@@ -10,6 +11,14 @@ if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true
     registry:2
 fi
 
+# 2. Create kind cluster with containerd registry config dir enabled
+# TODO: kind will eventually enable this by default and this patch will
+# be unnecessary.
+#
+# See:
+# https://github.com/kubernetes-sigs/kind/issues/2875
+# https://github.com/containerd/containerd/blob/main/docs/cri/config.md#registry-configuration
+# See: https://github.com/containerd/containerd/blob/main/docs/hosts.md
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -28,12 +37,6 @@ nodes:
     protocol: TCP
 EOF
 
-kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
-
-kubectl wait --namespace ingress-nginx \
-  --for=condition=ready pod \
-  --selector=app.kubernetes.io/component=controller \
-  --timeout=90s
 
 # 3. Add the registry config to the nodes
 #
@@ -71,4 +74,11 @@ data:
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
 
-kubectl apply -f ingress.yaml kind-host.yaml
+kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
+
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=90s
+
+kubectl apply -f ingress.yaml,kind-host.yaml

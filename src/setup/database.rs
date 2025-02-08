@@ -12,12 +12,12 @@ pub struct DatabaseConfig {
 
 pub fn setup_database_config(
     application_properties_path: &str,
-    vault_secrets_path: &str,
+    secrets_path: &str,
 ) -> anyhow::Result<DatabaseConfig> {
     let config = config::Config::builder()
         .add_source(config::Environment::with_prefix("DB"))
         .add_source(config::File::new(
-            vault_secrets_path,
+            secrets_path,
             config::FileFormat::Yaml,
         ))
         .add_source(config::File::new(

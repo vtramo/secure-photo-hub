@@ -9,7 +9,7 @@ data:
         method "kubernetes" {
             mount_path = "auth/kubernetes"
             config = {
-                role = "secure-photo-hub-keycloak-role"
+                role = "secure-photo-hub-role"
             }
         }
 
@@ -21,12 +21,10 @@ data:
     }
 
     template {
-    destination = "/etc/secrets/secrets.yaml"
+    destination = "/etc/secrets/application-secrets.yaml"
     contents = <<EOT
-    {{- with secret "secure-photo-hub/data/keycloak" }}
-    oidc:
-      client-id: "{{ .Data.data.clientId }}"
-      client-secret: "{{ .Data.data.clientSecret }}"
+    {{- with secret "secure-photo-hub/data/application-secrets" }}
+    {{ .Data.data.yaml }}
     {{ end }}
     EOT
     }
