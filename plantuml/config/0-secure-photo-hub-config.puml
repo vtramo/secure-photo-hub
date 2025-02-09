@@ -1,5 +1,6 @@
 @startuml
 hide footbox
+title Secure Photo Hub Configuration Flow
 participant "Secure Photo Hub" as SecurePhotoHub
 database "Application Properties/Secrets" as AppProperties
 [-> SecurePhotoHub : setup()

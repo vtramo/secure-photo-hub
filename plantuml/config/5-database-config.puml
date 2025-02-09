@@ -1,5 +1,6 @@
 @startuml
 hide footbox
+title Database Configuration Flow
 participant "Secure Photo Hub" as SecurePhotoHub
 participant "AWS API" as AWSAPI
 database "Application Properties" as AppProperties
@@ -12,5 +13,5 @@ SecurePhotoHub -> AppSecrets : Read username & password
 
 create DatabaseConfig
 SecurePhotoHub -> DatabaseConfig : create DatabaseConfig
-[<- SecurePhotoHub : return DatabaseConfig
+[<-- SecurePhotoHub : return DatabaseConfig
 @enduml

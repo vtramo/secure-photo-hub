@@ -1,5 +1,6 @@
 @startuml
 hide footbox
+title K8S Vault Auth Token Process
 
 actor "Security Operator" as SecurityOperator
 participant "kubelet" as Kubelet
@@ -19,7 +20,7 @@ Kubelet -> Pod: 1.1 Create JWT and store it in the Pod (env var)
 
 == Authentication ==
 Pod -> Vault: 2. Send JWT to Vault for authentication
-Vault -> Kubelet: 3. Invoke TokenReviewAPI (authentication)
+Vault --> Kubelet: 3. Invoke TokenReviewAPI (authentication)
 note right: TokenReview tenta di autenticare un token a un utente conosciuto.
 Kubelet -> Vault: 4. Respond with Service Account Names / Namespaces
 Vault -> Vault: 5. Verify: Service Account / Namespace matched against policy
@@ -29,6 +30,6 @@ l'autorizzazione ad
 accedere ai secrets
 end note
 
-Vault -> Pod: 6. Return Vault Auth Token
+Vault --> Pod: 6. Return Vault Auth Token
 
 @enduml

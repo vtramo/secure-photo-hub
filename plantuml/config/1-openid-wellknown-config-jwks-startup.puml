@@ -1,5 +1,6 @@
 @startuml
 hide footbox
+title OpenID Configuration Flow
 participant "Secure Photo Hub" as SecurePhotoHub
 participant Keycloak
 database "Application Properties" as AppProperties

@@ -1,5 +1,7 @@
 @startuml
 hide footbox
+title AWS S3 Configuration Flow
+
 participant "Secure Photo Hub" as SecurePhotoHub
 participant "AWS Security Token Service" as AWSAPI
 database "Application Secrets" as AppSecrets
@@ -20,9 +22,9 @@ alt valid credentials
     AWSAPI -> SecurePhotoHub : Credentials are valid
     create AwsS3Config
     SecurePhotoHub -> AwsS3Config : create AwsS3Config
-    [<- SecurePhotoHub : return AwsS3Config
+    [<-- SecurePhotoHub : return AwsS3Config
 else not valid credentials
     AWSAPI -> SecurePhotoHub : Credentials are NOT valid
-    [<- SecurePhotoHub : return InvalidCredentialsError
+    [<-- SecurePhotoHub : return InvalidCredentialsError
 end
 @enduml

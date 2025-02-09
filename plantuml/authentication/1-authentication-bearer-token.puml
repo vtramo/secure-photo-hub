@@ -1,0 +1,60 @@
+@startuml
+hide footbox
+title JWT Access Token Validation Flow
+
+participant "Client" as Client
+participant "Secure Photo Hub" as SecurePhotoHub
+participant "OidcConfig" as OidcConfig
+participant "Token Validator" as TokenValidator
+participant "Keycloak" as Keycloak
+
+Client -> SecurePhotoHub: HTTP Request (with Authorization Header)
+SecurePhotoHub -> HttpRequest: extract_bearer_token()
+
+group Bearer Token Found
+    HttpRequest --> SecurePhotoHub : JWT Access Token (Bearer Token)
+    SecurePhotoHub -> OidcConfig: get_jwks()
+    OidcConfig --> SecurePhotoHub: JWKS (JSON Web Key Set)
+
+    SecurePhotoHub -> TokenValidator: validate_access_token(access_token, jwks, audience)
+    TokenValidator -> TokenValidator: extract_decoding_key(access_token, jwks)
+    note right
+    1. Decode the JWT header to obtain:
+       - The decoding algorithm type (alg)
+       - The key identifier (kid)
+    2. Extract the DecodingKey from the JWKS using the kid value
+    end note
+    TokenValidator -> TokenValidator: Create Validation (set audience, algorithm)
+    note right
+    The decoding and verification of the JWT is performed using the DecodingKey
+    obtained in the previous step. The JWT's audience field is expected to contain
+    the client ID that identifies Secure Photo Hub.
+    end note
+    TokenValidator -> TokenValidator: Decode JWT (jsonwebtoken::decode)
+
+    group Token Valid
+        TokenValidator --> SecurePhotoHub: Valid Access Token
+        SecurePhotoHub -> Keycloak: Fetch User Info from UserInfo Endpoint
+        Keycloak --> SecurePhotoHub: UserInfoResponse
+        note right
+        The User Info Endpoint exposed by Keycloak is contacted to
+        retrieve user information based on the access token.
+        end note
+        SecurePhotoHub -> SecurePhotoHub: Create AuthenticatedUser
+        SecurePhotoHub -> SecurePhotoHub: process_request(authenticated_user)
+        SecurePhotoHub --> Client: HTTP 200 OK (Authorized)
+    end
+
+    group Token Invalid
+        TokenValidator --> SecurePhotoHub: Invalid Access Token (Invalid/Expired Token)
+        SecurePhotoHub --> Client: HTTP 401 Unauthorized
+    end
+
+end
+
+group Bearer Token NOT Found
+    HttpRequest --> SecurePhotoHub : None
+    SecurePhotoHub --> Client: HTTP 401 Unauthorized
+end
+
+@enduml
