@@ -1,0 +1,46 @@
+@startuml
+hide footbox
+participant "Secure Photo Hub" as SecurePhotoHub
+participant Keycloak
+database "Application Properties" as AppProperties
+database "Application Secrets" as AppSecrets
+
+[-> SecurePhotoHub : setup_oidc_config()
+activate SecurePhotoHub
+
+SecurePhotoHub -> AppProperties : Read OpenID configurations (auth-server-url, redirect-uri, scopes)
+SecurePhotoHub -> AppSecrets : Read Client ID & Client Secret
+
+== Fetch OIDC Well-Known Configuration ==
+SecurePhotoHub -> Keycloak : GET {{auth-server-url}}/.well-known/openid-configuration
+Keycloak --> SecurePhotoHub : HTTP 200 OK
+note right
+The response includes the following details:
+- **issuer**: The URL of the OIDC provider
+- **authorization_endpoint**: Endpoint for initiating authorization requests
+- **token_endpoint**: Endpoint for obtaining access tokens
+- **introspection_endpoint**: Endpoint for token introspection
+- **userinfo_endpoint**: Endpoint for retrieving user information
+- **jwks_uri**: URL of the JSON Web Key Set (JWKS) for token validation
+end note
+
+== Fetch OIDC UMA2 Well-Known Configuration ==
+SecurePhotoHub -> Keycloak : GET {{auth-server-url}}/.well-known/uma2-configuration
+Keycloak --> SecurePhotoHub : HTTP 200 OK
+note right
+The response includes the following details:
+- **issuer**: The URL of the OIDC provider
+- **resource_registration_endpoint**: The resource server can use this url to manage
+  their protected resources and scopes. This endpoint provides operations create,
+  read, update and delete resources and scopes in Keycloak
+end note
+
+== Fetch JSON Web Key Set (JWKS) ==
+SecurePhotoHub -> Keycloak : GET {{jwks_uri}}
+Keycloak --> SecurePhotoHub : HTTP 200 OK (JWKS)
+
+create OidcConfig
+SecurePhotoHub -> OidcConfig : create OidcConfig object
+[<- SecurePhotoHub : return OidcConfig
+deactivate SecurePhotoHub
+@enduml

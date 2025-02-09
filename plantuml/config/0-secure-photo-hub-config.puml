@@ -1,0 +1,25 @@
+@startuml
+hide footbox
+participant "Secure Photo Hub" as SecurePhotoHub
+database "Application Properties/Secrets" as AppProperties
+[-> SecurePhotoHub : setup()
+SecurePhotoHub -> AppProperties : Read Application Properties/Secrets
+
+== Setup OIDC Configurations ==
+SecurePhotoHub ->] : setup_oidc_config() 
+SecurePhotoHub <--] : OidcConfig 
+== Setup Redis Configurations ==
+SecurePhotoHub ->] : setup_redis_config() 
+SecurePhotoHub <--] : RedisConfig 
+== Setup AWS S3 Configurations ==
+SecurePhotoHub ->] : setup_aws_s3_config() 
+SecurePhotoHub <--] : AwsS3Config 
+== Setup Database Configurations ==
+SecurePhotoHub ->] : setup_database_config() 
+SecurePhotoHub <--] : DatabaseConfig
+== Create Config object ==
+SecurePhotoHub -> AppProperties : Read Server Port
+create Config
+SecurePhotoHub -> Config : create Config object
+[<- SecurePhotoHub : return Config
+@enduml

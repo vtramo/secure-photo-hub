@@ -1,0 +1,28 @@
+@startuml
+hide footbox
+participant "Secure Photo Hub" as SecurePhotoHub
+participant "AWS Security Token Service" as AWSAPI
+database "Application Secrets" as AppSecrets
+
+[-> SecurePhotoHub : setup_aws_s3_config()
+
+SecurePhotoHub -> AppSecrets : Read AWS Secrets
+note right
+- AWS Access Key ID
+- AWS Secret Access Key
+- AWS Region
+- AWS Endpoint URL
+- AWS S3 Bucket Name
+end note
+
+SecurePhotoHub -> AWSAPI : Check AWS Credentials (AWS ID + AWS Key)
+alt valid credentials
+    AWSAPI -> SecurePhotoHub : Credentials are valid
+    create AwsS3Config
+    SecurePhotoHub -> AwsS3Config : create AwsS3Config
+    [<- SecurePhotoHub : return AwsS3Config
+else not valid credentials
+    AWSAPI -> SecurePhotoHub : Credentials are NOT valid
+    [<- SecurePhotoHub : return InvalidCredentialsError
+end
+@enduml

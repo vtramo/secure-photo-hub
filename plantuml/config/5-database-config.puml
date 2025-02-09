@@ -1,0 +1,16 @@
+@startuml
+hide footbox
+participant "Secure Photo Hub" as SecurePhotoHub
+participant "AWS API" as AWSAPI
+database "Application Properties" as AppProperties
+database "Application Secrets" as AppSecrets
+
+[-> SecurePhotoHub : setup_database_config()
+
+SecurePhotoHub -> AppProperties : Read host, port & database name
+SecurePhotoHub -> AppSecrets : Read username & password
+
+create DatabaseConfig
+SecurePhotoHub -> DatabaseConfig : create DatabaseConfig
+[<- SecurePhotoHub : return DatabaseConfig
+@enduml
