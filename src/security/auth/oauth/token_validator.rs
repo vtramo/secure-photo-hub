@@ -102,17 +102,18 @@ async fn validate_tokens(
     client_id: &str,
 ) -> Result<(TokenData<Value>, IdTokenClaims), TokenValidationError> {
     let id_token_claims = validate_id_token(&id_token, nonce, jwks, client_id).await?;
-    let access_token_claims = validate_access_token(&access_token, jwks).await?;
+    let access_token_claims = validate_access_token(&access_token, jwks, &[client_id]).await?;
     Ok((access_token_claims, id_token_claims))
 }
 
 pub async fn validate_access_token(
     access_token: &str,
     jwks: &JwkSet,
+    audience: &[&str],
 ) -> Result<TokenData<Value>, TokenValidationError> {
     let (decoding_key, alg) = extract_decoding_key(access_token, jwks)?;
     let mut validation = Validation::new(alg);
-    validation.set_audience(&["account"]);
+    validation.set_audience(audience);
 
     match jsonwebtoken::decode::<Value>(access_token, &decoding_key, &validation) {
         Ok(token_data) => Ok(token_data),

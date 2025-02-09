@@ -325,6 +325,7 @@
         {
           "id": "bf2c6b50-7d57-4e64-b15e-d7cc2011f727",
           "name": "uma_protection",
+          "description": "",
           "composite": false,
           "clientRole": true,
           "containerId": "190220a9-ab14-4e97-8fa0-c2099fea8e46",
@@ -807,7 +808,7 @@
         "oidc.ciba.grant.enabled": "false",
         "client.use.lightweight.access.token.enabled": "false",
         "backchannel.logout.session.required": "true",
-        "client_credentials.use_refresh_token": "false",
+        "client_credentials.use_refresh_token": "true",
         "acr.loa.map": "{}",
         "require.pushed.authorization.requests": "false",
         "tls.client.certificate.bound.access.tokens": "false",
@@ -873,6 +874,7 @@
         "acr",
         "profile",
         "roles",
+        "secure-photo-hub-audience",
         "basic",
         "email"
       ],
@@ -888,24 +890,98 @@
         "policyEnforcementMode": "ENFORCING",
         "resources": [
           {
-            "name": "Photos",
+            "name": "Album",
             "type": "owned",
             "ownerManagedAccess": false,
-            "displayName": "Photos",
+            "displayName": "Album",
+            "attributes": {},
+            "uris": [
+              "/albums/{id}"
+            ],
+            "scopes": [
+              {
+                "name": "Create"
+              },
+              {
+                "name": "ChangeVisibility"
+              },
+              {
+                "name": "EditTitle"
+              },
+              {
+                "name": "ViewOwn"
+              },
+              {
+                "name": "View"
+              }
+            ],
+            "icon_uri": ""
+          },
+          {
+            "name": "Photo",
+            "type": "owned",
+            "ownerManagedAccess": false,
+            "displayName": "Photo",
             "attributes": {},
             "uris": [
               "/photos/{id}"
             ],
             "scopes": [
               {
-                "name": "ViewAll"
+                "name": "Create"
               },
               {
-                "name": "Create"
+                "name": "ChangeVisibility"
+              },
+              {
+                "name": "EditTitle"
               },
               {
                 "name": "ViewOwn"
               },
+              {
+                "name": "View"
+              },
+              {
+                "name": "ChangeAlbum"
+              }
+            ],
+            "icon_uri": ""
+          },
+          {
+            "name": "Image",
+            "type": "owned",
+            "ownerManagedAccess": false,
+            "displayName": "Image",
+            "attributes": {},
+            "uris": [
+              "/images/{id}"
+            ],
+            "scopes": [
+              {
+                "name": "Download"
+              },
+              {
+                "name": "Transform"
+              },
+              {
+                "name": "ViewOwn"
+              },
+              {
+                "name": "View"
+              }
+            ],
+            "icon_uri": ""
+          },
+          {
+            "name": "Photos",
+            "ownerManagedAccess": false,
+            "displayName": "/photos",
+            "attributes": {},
+            "uris": [
+              "/photos"
+            ],
+            "scopes": [
               {
                 "name": "View"
               }
@@ -943,6 +1019,14 @@
               "fetchRoles": "false",
               "roles": "[{\"id\":\"Admin\",\"required\":true}]"
             }
+          },
+          {
+            "name": "Filter Resources",
+            "description": "",
+            "type": "script-filter-resources-public-visibility-or-owner-or-admin.js",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {}
           },
           {
             "name": "Has Private Visibility Policy",
@@ -989,52 +1073,135 @@
             }
           },
           {
-            "name": "Admin can view all owned resources",
-            "description": "An admin can view all resources that belong to a user",
-            "type": "scope",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "defaultResourceType": "owned",
-              "applyPolicies": "[\"Admin Role Policy\"]",
-              "scopes": "[\"ViewAll\"]"
-            }
-          },
-          {
-            "name": "An user with BasicUserRole can create photos",
-            "description": "Registered users (BasicUser role) can create photos",
-            "type": "scope",
+            "name": "View Photos",
+            "description": "",
+            "type": "resource",
             "logic": "POSITIVE",
             "decisionStrategy": "UNANIMOUS",
             "config": {
               "resources": "[\"Photos\"]",
+              "applyPolicies": "[\"Filter Resources\"]"
+            }
+          },
+          {
+            "name": "Only user owner or Admin can move a photo to another album",
+            "description": "Only the owner or an admin can move a photo to another album",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Photo\"]",
+              "scopes": "[\"ChangeAlbum\"]",
+              "applyPolicies": "[\"Only User Owner Or Admin Policy\"]"
+            }
+          },
+          {
+            "name": "An user with BasicUser Role can create photos",
+            "description": "An user with BasicUser Role can create photos",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Photo\"]",
               "scopes": "[\"Create\"]",
               "applyPolicies": "[\"Basic User Role Policy\"]"
             }
           },
           {
-            "name": "Only user owner or Admin can view owned resources with private visibility",
-            "description": "All resources with an owner and private visibility can only be seen by the owner or by the admin",
+            "name": "An user with BasicUser Role can create albums",
+            "description": "An user with BasicUser Role can create albums",
             "type": "scope",
             "logic": "POSITIVE",
-            "decisionStrategy": "AFFIRMATIVE",
+            "decisionStrategy": "UNANIMOUS",
             "config": {
-              "defaultResourceType": "owned",
-              "resources": "[\"Photos\"]",
-              "scopes": "[\"View\"]",
-              "applyPolicies": "[\"Not Has Private Visibility Policy\",\"Only User Owner Or Admin Policy\"]"
+              "resources": "[\"Album\"]",
+              "scopes": "[\"Create\"]",
+              "applyPolicies": "[\"Basic User Role Policy\"]"
             }
           },
           {
-            "name": "A BasicUser can view all public photos",
+            "name": "Only user owner or an admin can change the title of an album",
+            "description": "Only the owner or an admin can change the title of an album",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Album\"]",
+              "scopes": "[\"EditTitle\"]",
+              "applyPolicies": "[\"Only User Owner Or Admin Policy\"]"
+            }
+          },
+          {
+            "name": "Only user owner or an admin can change the title of a photo",
+            "description": "Only the owner or an admin can change the title of a photo",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Photo\"]",
+              "scopes": "[\"EditTitle\"]",
+              "applyPolicies": "[\"Only User Owner Or Admin Policy\"]"
+            }
+          },
+          {
+            "name": "Only the owner or an admin can change the visibility of a photo",
             "description": "",
             "type": "scope",
             "logic": "POSITIVE",
             "decisionStrategy": "UNANIMOUS",
             "config": {
-              "resources": "[\"Photos\"]",
-              "scopes": "[\"View\",\"ViewAll\"]",
-              "applyPolicies": "[\"BasicUser & Resource Has Public Visibility Policy\"]"
+              "resources": "[\"Photo\"]",
+              "scopes": "[\"ChangeVisibility\"]",
+              "applyPolicies": "[\"Only User Owner Or Admin Policy\"]"
+            }
+          },
+          {
+            "name": "View Album",
+            "description": "(Has BasicUser Role AND Resource Has Public Visibility Policy) OR (Only User Owner Or Admin Policy)",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Album\"]",
+              "scopes": "[\"View\"]",
+              "applyPolicies": "[\"BasicUser & Resource Has Public Visibility Policy\",\"Only User Owner Or Admin Policy\"]"
+            }
+          },
+          {
+            "name": "View Photo",
+            "description": "(Has BasicUser Role AND Resource Has Public Visibility Policy) OR (Only User Owner Or Admin Policy)",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "defaultResourceType": "",
+              "resources": "[\"Photo\"]",
+              "scopes": "[\"View\"]",
+              "applyPolicies": "[\"BasicUser & Resource Has Public Visibility Policy\",\"Only User Owner Or Admin Policy\"]"
+            }
+          },
+          {
+            "name": "View/Transform/Download Images",
+            "description": "(Has BasicUser Role AND Resource Has Public Visibility Policy) OR (Only User Owner Or Admin Policy)",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Image\"]",
+              "scopes": "[\"View\",\"Transform\",\"Download\"]",
+              "applyPolicies": "[\"BasicUser & Resource Has Public Visibility Policy\",\"Only User Owner Or Admin Policy\"]"
+            }
+          },
+          {
+            "name": "Only the owner or an admin can change the visibility of an album",
+            "description": "",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Album\"]",
+              "scopes": "[\"ChangeVisibility\"]",
+              "applyPolicies": "[\"Only User Owner Or Admin Policy\"]"
             }
           }
         ],
@@ -1056,6 +1223,30 @@
           },
           {
             "name": "Create",
+            "iconUri": ""
+          },
+          {
+            "name": "ChangeAlbum",
+            "iconUri": "",
+            "displayName": "ChangeAlbum (Photo)"
+          },
+          {
+            "name": "EditTitle",
+            "iconUri": "",
+            "displayName": "EditTitle"
+          },
+          {
+            "name": "Download",
+            "iconUri": "",
+            "displayName": "Download"
+          },
+          {
+            "name": "Transform",
+            "iconUri": "",
+            "displayName": "Transform (Image)"
+          },
+          {
+            "name": "ChangeVisibility",
             "iconUri": ""
           }
         ],
@@ -1592,6 +1783,34 @@
           "config": {
             "introspection.token.claim": "true",
             "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "id": "68c0fee8-9e7a-420e-bbc6-aab8def7f65c",
+      "name": "secure-photo-hub-audience",
+      "description": "",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false",
+        "gui.order": "",
+        "consent.screen.text": ""
+      },
+      "protocolMappers": [
+        {
+          "id": "ab60abfe-5c45-404b-adff-3928fcb83f0a",
+          "name": "Include secure-photo-hub Client Audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "secure-photo-hub-rest-api",
+            "id.token.claim": "true",
+            "lightweight.claim": "true",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
           }
         }
       ]

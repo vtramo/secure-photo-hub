@@ -31,7 +31,7 @@ pub async fn authentication_middleware_bearer_token(
     let oidc_config = get_oidc_config(&req)?;
 
     if let Some(ref access_token) = extract_bearer_token(&req) {
-        match validate_access_token(&access_token, oidc_config.jwks()).await {
+        match validate_access_token(&access_token, oidc_config.jwks(), &[oidc_config.client_id()]).await {
             Ok(_) => {
                 let user_info_endpoint =
                     UserInfoEndpoint::new(oidc_config.userinfo_endpoint(), access_token);

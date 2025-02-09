@@ -1,11 +1,11 @@
 oidc:
   auth-server.url: http://localhost:8080/realms/secure-photo-hub
-  scopes: openid profile email offline_access
+  scopes: openid profile email offline_access secure-photo-hub-audience
   redirect-uri: http://localhost:8085/openid_redirect_uri_endpoint
 redis:
   host: redis://127.0.0.1:6379
 server:
-  port: 8085
+  port: 8087
 database:
   host: 127.0.0.1
   port: 5432
