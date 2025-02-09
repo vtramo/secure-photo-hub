@@ -44,3 +44,4 @@ uuid = { version = "1.11.0", features = ["v4", "serde"] }
 tokio = { version = "1.41.0", features = ["macros"] }
 mime = "0.3.17"
 futures = "0.3.31"
+aws-sdk-sts = "1.59.0"

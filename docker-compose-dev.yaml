@@ -72,7 +72,7 @@ services:
       - 3030:3030
     environment:
       - DEBUG=1
-      - SERVICES=s3
+      - SERVICES=s3,sts
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - PORT_WEB_UI=3030

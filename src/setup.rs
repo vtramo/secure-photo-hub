@@ -36,10 +36,11 @@ mod logging;
 const CONFIG_LOCATION_ENV_VAR: &'static str = "CONFIG_LOCATION";
 const SECRETS_LOCATION_ENV_VAR: &'static str = "SECRETS_LOCATION";
 const SERVER_PORT_ENV_VAR: &'static str = "SERVER_PORT";
-const SERVER_PORT_FIELD: &'static str = "server.port";
+const SERVER_FIELD: &'static str = "server";
+const PORT_FIELD: &'static str = "port";
 const APPLICATION_PROPERTIES: LazyLock<&Path> =
     LazyLock::new(|| Path::new("resources/application-properties.yaml"));
-const SECRETS: LazyLock<&Path> = LazyLock::new(|| Path::new("../resources/application-secrets.yaml"));
+const SECRETS: LazyLock<&Path> = LazyLock::new(|| Path::new("resources/application-secrets.yaml"));
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -102,8 +103,8 @@ async fn setup() -> anyhow::Result<Config> {
 }
 
 fn get_server_port(application_properties: &Yaml) -> u16 {
-    application_properties[SERVER_PORT_FIELD]
-        .as_str()
+    application_properties[SERVER_FIELD][PORT_FIELD]
+        .as_i64()
         .map(|s| s.to_string())
         .or_else(|| env::var(SERVER_PORT_ENV_VAR).ok())
         .and_then(|s| s.parse().ok())

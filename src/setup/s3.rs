@@ -1,7 +1,9 @@
 use std::env;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
+use aws_config::SdkConfig;
 use aws_sdk_s3::config::Credentials;
+use aws_sdk_sts::Client as AwsStsClient;
 use yaml_rust2::Yaml;
 
 const AWS_ACCESS_KEY_ID_ENV_VAR: &str = "AWS_ACCESS_KEY_ID";
@@ -35,10 +37,23 @@ pub async fn setup_aws_s3_config(secrets: &Yaml) -> anyhow::Result<AwsS3Config> 
         .credentials_provider(Credentials::new(&aws_access_key_id, &aws_secret_access_key, None, None, ""))
         .endpoint_url(aws_endpoint_url)
         .load().await;
+
+    check_aws_credentials(&sdk_config).await?;
+
     Ok(AwsS3Config {
         bucket_name,
         sdk_config
     })
+}
+
+async fn check_aws_credentials(sdk_config: &SdkConfig) -> anyhow::Result<()> {
+    let sts_client = AwsStsClient::new(&sdk_config);
+    
+    if let Err(_) = sts_client.get_caller_identity().send().await {
+        return Err(anyhow!("Invalid AWS Credentials!"));
+    }
+    
+    Ok(())
 }
 
 fn set_aws_environment_variables(

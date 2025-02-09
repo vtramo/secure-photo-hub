@@ -182,10 +182,10 @@ pub async fn setup_oidc_config(
     let redirect_uri = extract_redirect_uri(oidc)?;
     let scopes = extract_scopes(oidc)?;
 
-    let well_know_openid_config_url = build_well_known_openid_config_url(&auth_server_url)?;
-    let oidc_well_known_config = fetch_well_known_openid_config(&well_know_openid_config_url).await?;
-    let well_know_openid_config_url = build_well_known_uma2_config_url(&auth_server_url)?;
-    let uma2_well_known_config = fetch_well_know_uma2_config(&well_know_openid_config_url).await?;
+    let well_known_openid_config_url = build_well_known_openid_config_url(&auth_server_url)?;
+    let oidc_well_known_config = fetch_well_known_openid_config(&well_known_openid_config_url).await?;
+    let well_known_openid_config_url = build_well_known_uma2_config_url(&auth_server_url)?;
+    let uma2_well_known_config = fetch_well_known_uma2_config(&well_known_openid_config_url).await?;
     let jwks = fetch_jwks(&oidc_well_known_config.jwks_uri).await?;
 
     Ok(OidcConfig {
@@ -318,7 +318,7 @@ async fn fetch_well_known_openid_config(
 }
 
 
-async fn fetch_well_know_uma2_config(
+async fn fetch_well_known_uma2_config(
     well_know_uma2_config_url: &reqwest::Url,
 ) -> anyhow::Result<Uma2WellKnownConfig> {
     let client = reqwest::Client::new();
