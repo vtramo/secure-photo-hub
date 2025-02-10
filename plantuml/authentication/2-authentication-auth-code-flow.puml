@@ -1,0 +1,64 @@
+@startuml
+title OAuth2 Authorization Code Flow
+hide footbox
+
+participant Browser
+participant "Secure Photo Hub" as SecurePhotoHub
+participant HttpRequest
+participant "Redis Session Middleware" as RedisSessionMiddleware
+participant Keycloak
+database Redis
+
+Browser -> SecurePhotoHub: HTTP Request
+SecurePhotoHub -> HttpRequest : extract_session_cookie()
+SecurePhotoHub <-- HttpRequest : session cookie
+SecurePhotoHub -> RedisSessionMiddleware : get_session(session_cookie)
+RedisSessionMiddleware -> Redis : get_session(session_cookie)
+RedisSessionMiddleware <-- Redis : session
+create Session
+RedisSessionMiddleware -> Session : create Session object
+SecurePhotoHub <-- RedisSessionMiddleware : session
+
+SecurePhotoHub -> Session : get_oauth_session()
+create OAuthSession
+Session -> OAuthSession
+
+alt is already authenticated
+
+    SecurePhotoHub <-- Session : OAuthSession
+    SecurePhotoHub -> OAuthSession : is_access_token_expired()
+    SecurePhotoHub <-- OAuthSession : is_access_token_expired
+
+    alt Access Token is NOT experied
+
+        SecurePhotoHub -> SecurePhotoHub : process_request()
+        Browser <-- SecurePhotoHub: HttpResponse
+    else Access Token is Experied
+
+        SecurePhotoHub -> Keycloak : refresh_token_request(client_id, client_secret, refresh_token, scopes)
+        Keycloak -> SecurePhotoHub : Refresh Token Response
+        SecurePhotoHub -> SecurePhotoHub : validate_tokens(refresh_token_response)
+        create AuthenticatedUser
+        SecurePhotoHub -> AuthenticatedUser : Create AuthenticatedUser
+        SecurePhotoHub -> RedisSessionMiddleware : save(tokens, authenticated_user)
+        RedisSessionMiddleware -> Redis : save(tokens, authenticated_user)
+        RedisSessionMiddleware <-- Redis
+        SecurePhotoHub <-- RedisSessionMiddleware
+
+        SecurePhotoHub -> SecurePhotoHub : process_request()
+        Browser <-- SecurePhotoHub: HttpResponse
+    end
+
+else not authenticated
+    create OAuthSecureAuthorizationRequest
+    SecurePhotoHub -> OAuthSecureAuthorizationRequest : create OAuthSecureAuthorizationRequest
+    SecurePhotoHub -> OAuthSecureAuthorizationRequest : get_state()
+    SecurePhotoHub <-- OAuthSecureAuthorizationRequest : state
+    SecurePhotoHub -> Session : save(state)
+    SecurePhotoHub <-- Session
+    SecurePhotoHub -> OAuthSecureAuthorizationRequest : get_url()
+    SecurePhotoHub <-- OAuthSecureAuthorizationRequest : url
+
+    Browser <-- SecurePhotoHub: HTTP 302 Found redirect to Keycloak {{url}
+end
+@enduml

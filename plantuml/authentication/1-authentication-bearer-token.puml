@@ -42,7 +42,7 @@ group Bearer Token Found
         end note
         SecurePhotoHub -> SecurePhotoHub: Create AuthenticatedUser
         SecurePhotoHub -> SecurePhotoHub: process_request(authenticated_user)
-        SecurePhotoHub --> Client: HTTP 200 OK (Authorized)
+        SecurePhotoHub --> Client: HTTP 200 OK
     end
 
     group Token Invalid

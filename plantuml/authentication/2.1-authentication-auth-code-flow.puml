@@ -1,0 +1,12 @@
+@startuml
+title OAuth2 Authorization Code Flow
+hide footbox
+
+participant Browser
+participant "Secure Photo Hub" as SecurePhotoHub
+participant HttpRequest
+participant "Redis Session Middleware" as RedisSessionMiddleware
+participant Keycloak
+database Redis
+
+@enduml
