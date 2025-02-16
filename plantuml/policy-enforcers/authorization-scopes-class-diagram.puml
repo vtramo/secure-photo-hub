@@ -1,0 +1,13 @@
+@startuml
+enum AuthorizationScope {
+    View
+    ViewAll
+    ViewOwn
+    Create
+    Transform
+    Download
+    ChangeAlbum
+    ChangeVisibility
+    EditTitle
+}
+@enduml

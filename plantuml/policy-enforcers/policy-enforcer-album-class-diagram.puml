@@ -1,0 +1,51 @@
+@startuml
+
+class Album {
+    id: Uuid
+    title: String
+    description: String
+    visibility: Visibility
+    owner_user_id: Uuid
+    cover_image_id: Uuid
+    cover_image_url: Url
+    created_at: chrono::DateTime<Utc>
+}
+
+class UpdateAlbum {
+    id: Uuid
+    title: Option<String>
+    visibility: Option<Visibility>
+}
+
+enum Visibility {
+    Public
+    Private
+    Shared
+}
+
+interface AlbumPolicyEnforcer {
+    + can_view_album(authenticated_user: &AuthenticatedUser, album: &Album) -> anyhow::Result<bool>
+    + can_create_album(authenticated_user: &AuthenticatedUser) -> anyhow::Result<bool>
+    + can_edit_album(authenticated_user: &AuthenticatedUser, album: &Album, update_album: &UpdateAlbum) -> anyhow::Result<bool>
+    + filter_albums_by_view_permission(authenticated_user: &AuthenticatedUser, albums: Vec<Album>) -> anyhow::Result<Vec<Album>>
+}
+
+class AuthenticatedUser {
+    id: Uuid
+    username: String
+    given_name: String
+    family_name: String
+    full_name: String
+    email: String
+    email_verified: bool
+    access_token: String
+}
+
+class AlbumPolicyEnforcerKc {}
+
+AlbumPolicyEnforcer --> AuthenticatedUser
+AlbumPolicyEnforcer --> Album
+AlbumPolicyEnforcer --> UpdateAlbum
+UpdateAlbum -l-> Visibility
+AlbumPolicyEnforcerKc --|>  AlbumPolicyEnforcer : <<implements>>
+@enduml

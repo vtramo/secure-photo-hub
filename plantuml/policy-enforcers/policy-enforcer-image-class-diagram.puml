@@ -1,0 +1,42 @@
+@startuml
+class ImageReference {
+    id: Uuid
+    owner_user_id: Uuid
+    url: url::Url
+    size: u64
+    visibility: Visibility
+    format: ImageFormat
+}
+
+enum Visibility {
+    Public
+    Private
+    Shared
+}
+
+interface ImagePolicyEnforcer {
+    + can_download(authenticated_user: &AuthenticatedUser, image_reference: &ImageReference) -> anyhow::Result<bool>
+    + can_transform(authenticated_user: &AuthenticatedUser, image_reference: &ImageReference) -> anyhow::Result<bool>
+    + can_download_then_transform(authenticated_user: &AuthenticatedUser, image_reference: &ImageReference) -> anyhow::Result<bool>
+    + can_create(authenticated_user: &AuthenticatedUser) -> anyhow::Result<bool>
+    + can_view(authenticated_user: &AuthenticatedUser, image_reference: &ImageReference) -> anyhow::Result<bool>
+}
+
+class AuthenticatedUser {
+    id: Uuid
+    username: String
+    given_name: String
+    family_name: String
+    full_name: String
+    email: String
+    email_verified: bool
+    access_token: String
+}
+
+class ImagePolicyEnforcerKc {}
+
+ImageReference -l-> Visibility
+ImagePolicyEnforcer --> AuthenticatedUser
+ImagePolicyEnforcer --> ImageReference
+ImagePolicyEnforcerKc --|>  ImagePolicyEnforcer : <<implements>>
+@enduml

@@ -1,0 +1,54 @@
+@startuml
+
+class UpdatePhoto {
+    id: Uuid
+    title: Option<String>
+    album_id: Option<Uuid>
+    visibility: Option<Visibility>
+}
+
+class Photo {
+    id: Uuid
+    title: String
+    description: String
+    category: String
+    tags: Vec<String>
+    owner_user_id: Uuid
+    album_id: Option<Uuid>
+    visibility: Visibility
+    image: ImageReference
+    created_at: chrono::DateTime<Utc>
+}
+
+enum Visibility {
+    Public
+    Private
+    Shared
+}
+
+interface PhotoPolicyEnforcer {
+    + can_view_photo(authenticated_user: &AuthenticatedUser, photo: &Photo) -> anyhow::Result<bool>
+    + can_create_photo(authenticated_user: &AuthenticatedUser) -> anyhow::Result<bool>
+    + can_edit_photo(authenticated_user: &AuthenticatedUser, photo: &Photo, update_photo: &UpdatePhoto) -> anyhow::Result<bool>
+    + filter_photos_by_view_permission(authenticated_user: &AuthenticatedUser, photos: Vec<Photo>) -> anyhow::Result<Vec<Photo>>
+}
+
+class AuthenticatedUser {
+    id: Uuid
+    username: String
+    given_name: String
+    family_name: String
+    full_name: String
+    email: String
+    email_verified: bool
+    access_token: String
+}
+
+class PhotoPolicyEnforcerKc {}
+
+PhotoPolicyEnforcer --> AuthenticatedUser
+PhotoPolicyEnforcer --> Photo
+PhotoPolicyEnforcer --> UpdatePhoto
+UpdatePhoto -l-> Visibility
+PhotoPolicyEnforcerKc --|>  PhotoPolicyEnforcer : <<implements>>
+@enduml
