@@ -214,4 +214,8 @@ impl ImageTransformOptions {
 
         transformations
     }
+    
+    pub fn contains_transformations(&self) -> bool {
+        self.thumbnail.is_some() || self.huerotate.is_some()
+    }
 }

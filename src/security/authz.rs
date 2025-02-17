@@ -12,6 +12,7 @@ mod image;
 pub use kc_authz_service::{AuthorizationScope, KcAuthzService};
 pub use photo::{PhotoPolicyEnforcerKc};
 pub use album::{AlbumPolicyEnforcerKc};
+pub use image::{ImagePolicyEnforcerKc};
 use crate::models::service::image::{ImageReference};
 
 #[async_trait()]

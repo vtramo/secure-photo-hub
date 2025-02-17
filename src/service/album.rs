@@ -84,8 +84,8 @@ impl<R, I, P> AlbumService for AlbumServiceImpl<R, I, P>
         authenticated_user: &AuthenticatedUser,
         create_album_with_cover: &CreateAlbumWithCover
     ) -> anyhow::Result<Album> {
-        let can_edit_album = self.album_policy_enforcer.can_create_album(authenticated_user).await?;
-        if !can_edit_album {
+        let can_create_album = self.album_policy_enforcer.can_create_album(authenticated_user).await?;
+        if !can_create_album {
             return Err(anyhow::anyhow!("Unauthorized to create album")); // TODO: Error Handling
         }
         

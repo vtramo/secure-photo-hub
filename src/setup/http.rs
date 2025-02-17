@@ -13,7 +13,7 @@ use crate::{routes, security, service};
 use crate::service::image_storage::AwsS3Client;
 use crate::repository::PostgresDatabase;
 use crate::security::auth::oauth::OAuthClientSession;
-use crate::security::authz::{PhotoPolicyEnforcerKc, AlbumPolicyEnforcerKc, KcAuthzService};
+use crate::security::authz::{PhotoPolicyEnforcerKc, AlbumPolicyEnforcerKc, ImagePolicyEnforcerKc, KcAuthzService};
 use crate::service::{AlbumService, PhotoService};
 use crate::service::image::ImageReferenceUrlBuilder;
 
@@ -64,6 +64,7 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
     let kc_authz_service = Arc::new(KcAuthzService::new(config.oidc_config(), authz_oauth_client_session));
     let photo_policy_enforcer = Arc::new(PhotoPolicyEnforcerKc::new(Arc::clone(&kc_authz_service)));
     let album_policy_enforcer = Arc::new(AlbumPolicyEnforcerKc::new(Arc::clone(&kc_authz_service)));
+    let image_policy_enforcer = Arc::new(ImagePolicyEnforcerKc::new(Arc::clone(&kc_authz_service)));
 
     let aws_s3_client = Arc::new(AwsS3Client::new(&config.aws_s3_config));
     let database = Arc::new(PostgresDatabase::connect_with_db_config(&config.database_config).await?);
@@ -81,7 +82,11 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
         Arc::clone(&album_policy_enforcer),
         Arc::clone(&image_reference_endpoint_url_builder),
     );
-    let image_service = service::image::ImageServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client));
+    let image_service = service::image::ImageServiceImpl::new(
+        Arc::clone(&database), 
+        Arc::clone(&aws_s3_client),
+        Arc::clone(&image_policy_enforcer),
+    );
     
     let photo_routes_state = PhotoRoutesState { photo_service: Arc::new(photo_service) };
     let album_routes_state = AlbumRoutesState { album_service: Arc::new(album_service) };
@@ -154,7 +159,7 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
             )
             .route(
                 routes::image::IMAGE_BY_ID_ROUTE,
-                web::get().to(routes::image::get_image_by_id::<service::image::ImageServiceImpl<PostgresDatabase, AwsS3Client>>),
+                web::get().to(routes::image::get_image_by_id::<service::image::ImageServiceImpl<PostgresDatabase, AwsS3Client, ImagePolicyEnforcerKc>>),
             )
             .service(routes::home);
         app

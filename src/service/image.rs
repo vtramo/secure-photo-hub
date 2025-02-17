@@ -3,26 +3,30 @@ use std::sync::Arc;
 use image::{ImageFormat, ImageReader};
 use url::Url;
 use uuid::Uuid;
-use crate::models::service::image::{ImageTransformOptions, Image, ImageTransformation};
+use crate::models::service::image::{ImageTransformOptions, Image, ImageTransformation, ImageReference};
 use crate::repository::image_reference_repository::ImageReferenceRepository;
 use crate::security::auth::user::AuthenticatedUser;
+use crate::security::authz::ImagePolicyEnforcer;
 use crate::service::image_storage::ImageStorage;
 use crate::service::ImageService;
 
 #[derive(Debug, Clone)]
-pub struct ImageServiceImpl<IR, IU: ImageStorage>
+pub struct ImageServiceImpl<IR, IU, IP>
     where
         IR: ImageReferenceRepository,
         IU: ImageStorage,
+        IP: ImagePolicyEnforcer,
 {
     image_reference_repository: Arc<IR>,
     image_uploader: Arc<IU>,
+    image_policy_enforcer: Arc<IP>,
 }
 
-impl<IR, IU> ImageServiceImpl<IR, IU>
+impl<IR, IU, IP> ImageServiceImpl<IR, IU, IP>
     where
         IR: ImageReferenceRepository,
         IU: ImageStorage,
+        IP: ImagePolicyEnforcer,
 {
     pub fn image_reference_repository(&self) -> Arc<IR> {
         self.image_reference_repository.clone()
@@ -32,8 +36,8 @@ impl<IR, IU> ImageServiceImpl<IR, IU>
         self.image_uploader.clone()
     }
 
-    pub fn new(image_reference_repository: Arc<IR>, image_uploader: Arc<IU>) -> Self {
-        Self { image_reference_repository, image_uploader }
+    pub fn new(image_reference_repository: Arc<IR>, image_uploader: Arc<IU>, image_policy_enforcer: Arc<IP>) -> Self {
+        Self { image_reference_repository, image_uploader, image_policy_enforcer }
     }
     
     fn transform_image(image: Image, image_transform_options: &ImageTransformOptions) -> anyhow::Result<Image> {
@@ -59,10 +63,11 @@ impl<IR, IU> ImageServiceImpl<IR, IU>
 }
 
 #[async_trait::async_trait]
-impl<IR, IU> ImageService for ImageServiceImpl<IR, IU>
+impl<IR, IU, IP> ImageService for ImageServiceImpl<IR, IU, IP>
     where
         IR: ImageReferenceRepository,
         IU: ImageStorage,
+        IP: ImagePolicyEnforcer,
 {
     async fn get_image(
         &self,
@@ -70,15 +75,25 @@ impl<IR, IU> ImageService for ImageServiceImpl<IR, IU>
         id: &Uuid,
         image_transform_options: &ImageTransformOptions
     ) -> anyhow::Result<Option<Image>> {
-        let image_reference = self
+        let image_reference_entity = self
             .image_reference_repository()
             .find_image_reference_by_id(id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("Image reference not found"))?;
+
+        let image_reference = ImageReference::from(image_reference_entity);
+        let is_authorized = if image_transform_options.contains_transformations() {
+            self.image_policy_enforcer.can_download_then_transform(authenticated_user, &image_reference).await?
+        } else {
+            self.image_policy_enforcer.can_download(authenticated_user, &image_reference).await?
+        };
+        if !is_authorized {
+            return Err(anyhow::anyhow!("Unauthorized to download image")); // TODO: Error Handling
+        }
         
         let image = self
             .image_uploader
-            .download_image(&image_reference.id)
+            .download_image(image_reference.id())
             .await?
             .ok_or_else(|| anyhow::anyhow!("Image not found"))?;
         
