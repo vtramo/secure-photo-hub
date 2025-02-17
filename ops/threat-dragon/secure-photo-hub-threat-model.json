@@ -1,0 +1,26 @@
+{
+  "version": "2.3.0",
+  "summary": {
+    "title": "secure-photo-hub-threat-model",
+    "owner": "vtramo",
+    "description": "Secure Photo Hub is a REST API for securely storing and managing photos and albums. It uses AWS S3 for storage, HashiCorp Vault for secrets management, and Keycloak for access control with RBAC and ABAC. The system ensures confidentiality, availability, integrity, accountability, and authenticity. The Threat Model identifies risks like spoofing, tampering, data leaks, and denial of service, using STRIDE analysis to mitigate threats.\n\nThe system consists of:\n\nREST API: Manages photo/album operations with OAuth2/OpenID Connect.\n\nAWS S3: Securely stores photos with encryption.\n\nHashiCorp Vault: Manages secrets and cryptographic keys.\n\nKeycloak: Handles authentication and access policies.\n\nDatabase: Stores metadata and access logs.\n\nClient: Web/mobile apps interacting with the API.\n\nData flows include authentication, photo upload/download, and album management, with strict access controls and logging for accountability.",
+    "id": 0
+  },
+  "detail": {
+    "contributors": [],
+    "diagrams": [
+      {
+        "id": 0,
+        "title": "stride-diagram",
+        "diagramType": "STRIDE",
+        "placeholder": "New STRIDE diagram description",
+        "thumbnail": "./public/content/images/thumbnail.stride.jpg",
+        "version": "2.3.0",
+        "cells": []
+      }
+    ],
+    "diagramTop": 1,
+    "reviewer": "",
+    "threatTop": 0
+  }
+}
