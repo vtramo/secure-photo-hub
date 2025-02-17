@@ -1,0 +1,36 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "VisualEditor0",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:GetObjectVersionTagging",
+        "s3:GetObjectAttributes",
+        "s3:GetObjectTagging",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::secure-photo-hub-bucket",
+        "arn:aws:s3:::secure-photo-hub-bucket/*"
+      ]
+    },
+    {
+      "Effect": "Deny",
+      "NotAction": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:GetObjectVersionTagging",
+        "s3:GetObjectAttributes",
+        "s3:GetObjectTagging",
+        "s3:ListBucket"
+      ],
+      "NotResource": [
+        "arn:aws:s3:::secure-photo-hub-bucket",
+        "arn:aws:s3:::secure-photo-hub-bucket/*"
+      ]
+    }
+  ]
+}
