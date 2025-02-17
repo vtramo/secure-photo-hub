@@ -6,7 +6,7 @@ use crate::models::entity::{ImageReferenceEntity, VisibilityEntity};
 use crate::models::entity::album::{AlbumCoverImageReferenceEntity, AlbumEntity, AlbumNoCoverImageReferenceEntity};
 use crate::models::service::album::{CreateAlbum, UpdateAlbum};
 use crate::models::service::image::ImageReference;
-use crate::repository::{build_image_reference_url, NULL, PostgresDatabase};
+use crate::repository::{NULL, PostgresDatabase};
 
 #[async_trait::async_trait]
 pub trait AlbumRepository: Clone + Send + Sync + 'static {
@@ -139,7 +139,7 @@ impl PostgresDatabase {
             cover_image: ImageReferenceEntity {
                 id: cover_image_entity.id,
                 owner_user_id: cover_image_entity.owner_user_id,
-                url: build_image_reference_url(&cover_image_entity.id).to_string(),
+                url: create_album.cover_image_reference_url().to_string(),
                 size: cover_image_entity.size,
                 visibility,
                 format: cover_image_entity.format.clone(),
@@ -181,6 +181,7 @@ mod tests {
             owner_user_id,
             cover_image_id,
             cover_image_url.clone(),
+            cover_image_url.clone(),
             2048,
             ImageFormat::Jpeg,
         );
@@ -213,6 +214,7 @@ mod tests {
             &None,
             &Visibility::Private,
             &image_url,
+            &image_url,
             1024,
             &ImageFormat::Png,
         );
@@ -230,6 +232,7 @@ mod tests {
             visibility,
             owner_user_id,
             cover_image_id,
+            cover_image_url.clone(),
             cover_image_url.clone(),
             2048,
             ImageFormat::Jpeg,
@@ -262,6 +265,7 @@ mod tests {
             visibility.clone(),
             owner_user_id,
             cover_image_id,
+            cover_image_url.clone(),
             cover_image_url.clone(),
             2048,
             ImageFormat::Jpeg,
@@ -301,6 +305,7 @@ mod tests {
             visibility,
             owner_user_id,
             cover_image_id,
+            cover_image_url.clone(),
             cover_image_url.clone(),
             2048, 
             ImageFormat::Jpeg,

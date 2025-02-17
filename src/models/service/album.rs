@@ -116,6 +116,7 @@ pub struct CreateAlbum {
     owner_user_id: Uuid,
     cover_image_id: Uuid,
     cover_image_url: url::Url,
+    cover_image_reference_url: url::Url,
     cover_image_size: u64,
     cover_image_format: ImageFormat,
 }
@@ -127,11 +128,12 @@ impl CreateAlbum {
         visibility: Visibility, 
         owner_user_id: Uuid, 
         cover_image_id: Uuid, 
-        cover_image_url: url::Url, 
+        cover_image_url: url::Url,
+        cover_image_reference_url: url::Url,
         cover_image_size: u64, 
         cover_image_format: ImageFormat
     ) -> Self {
-        Self { title, description, visibility, owner_user_id, cover_image_id, cover_image_url, cover_image_size, cover_image_format }
+        Self { title, description, visibility, owner_user_id, cover_image_id, cover_image_url, cover_image_reference_url, cover_image_size, cover_image_format }
     }
     pub fn title(&self) -> &str {
         &self.title
@@ -150,6 +152,9 @@ impl CreateAlbum {
     }
     pub fn cover_image_url(&self) -> &url::Url {
         &self.cover_image_url
+    }
+    pub fn cover_image_reference_url(&self) -> &url::Url {
+        &self.cover_image_reference_url
     }
     pub fn cover_image_size(&self) -> u64 {
         self.cover_image_size

@@ -41,7 +41,3 @@ impl PostgresDatabase {
 }
 
 const NULL: &'static str = "NULL";
-
-fn build_image_reference_url(image_id: &Uuid) -> url::Url { // TODO: set hostname
-    url::Url::parse(&format!("http://localhost:8085/images/{}", image_id)).unwrap()
-}

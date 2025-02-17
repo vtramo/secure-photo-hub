@@ -15,6 +15,7 @@ use crate::repository::PostgresDatabase;
 use crate::security::auth::oauth::OAuthClientSession;
 use crate::security::authz::{PhotoPolicyEnforcerKc, AlbumPolicyEnforcerKc, KcAuthzService};
 use crate::service::{AlbumService, PhotoService};
+use crate::service::image::ImageReferenceUrlBuilder;
 
 #[derive(Debug, Clone)]
 pub struct PhotoRoutesState<PS: PhotoService> {
@@ -66,8 +67,20 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
 
     let aws_s3_client = Arc::new(AwsS3Client::new(&config.aws_s3_config));
     let database = Arc::new(PostgresDatabase::connect_with_db_config(&config.database_config).await?);
-    let photo_service = service::photo::PhotoServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client), Arc::clone(&photo_policy_enforcer));
-    let album_service = service::album::AlbumServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client), Arc::clone(&album_policy_enforcer));
+    
+    let image_reference_endpoint_url_builder = Arc::new(ImageReferenceUrlBuilder::new(&config.image_reference_endpoint_url));
+    let photo_service = service::photo::PhotoServiceImpl::new(
+        Arc::clone(&database), 
+        Arc::clone(&aws_s3_client), 
+        Arc::clone(&photo_policy_enforcer),
+        Arc::clone(&image_reference_endpoint_url_builder),
+    );
+    let album_service = service::album::AlbumServiceImpl::new(
+        Arc::clone(&database), 
+        Arc::clone(&aws_s3_client), 
+        Arc::clone(&album_policy_enforcer),
+        Arc::clone(&image_reference_endpoint_url_builder),
+    );
     let image_service = service::image::ImageServiceImpl::new(Arc::clone(&database), Arc::clone(&aws_s3_client));
     
     let photo_routes_state = PhotoRoutesState { photo_service: Arc::new(photo_service) };

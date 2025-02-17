@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use url::Url;
 use uuid::Uuid;
-use crate::models::service::album::Album;
 use crate::models::service::pagination::Page;
 use crate::models::service::photo::{CreatePhoto, Photo, UpdatePhoto, UploadPhoto};
 use crate::service::PhotoService;
@@ -9,6 +8,7 @@ use crate::service::image_storage::ImageStorage;
 use crate::repository::photo_repository::PhotoRepository;
 use crate::security::auth::user::AuthenticatedUser;
 use crate::security::authz::PhotoPolicyEnforcer;
+use crate::service::image::ImageReferenceUrlBuilder;
 
 #[derive(Debug, Clone)]
 pub struct PhotoServiceImpl<R, I, P>
@@ -20,6 +20,7 @@ pub struct PhotoServiceImpl<R, I, P>
     photo_repository: Arc<R>,
     image_repository: Arc<I>,
     photo_policy_enforcer: Arc<P>,
+    image_reference_url_builder: Arc<ImageReferenceUrlBuilder>,
 }
 
 impl<R, I, P> PhotoServiceImpl<R, I, P>
@@ -28,11 +29,17 @@ impl<R, I, P> PhotoServiceImpl<R, I, P>
         I: ImageStorage,
         P: PhotoPolicyEnforcer,
 {
-    pub fn new(photo_repository: Arc<R>, image_repository: Arc<I>, photo_policy_enforcer: Arc<P>) -> Self {
+    pub fn new(
+        photo_repository: Arc<R>, 
+        image_repository: Arc<I>, 
+        photo_policy_enforcer: Arc<P>,
+        image_reference_url_builder: Arc<ImageReferenceUrlBuilder>
+    ) -> Self {
         Self {
             photo_repository,
             image_repository,
-            photo_policy_enforcer
+            photo_policy_enforcer,
+            image_reference_url_builder
         }
     }
 }
@@ -91,6 +98,7 @@ impl<R, I, P> PhotoService for PhotoServiceImpl<R, I, P>
 
         let upload_image = upload_photo.upload_image();
         let (created_image_id, created_image_url) = self.image_repository.upload_image(upload_image).await?;
+        let image_reference_url = self.image_reference_url_builder.build(&created_image_id);
 
         let create_photo = CreatePhoto::new(
             upload_photo.title(),
@@ -102,6 +110,7 @@ impl<R, I, P> PhotoService for PhotoServiceImpl<R, I, P>
             upload_photo.album_id(),
             upload_photo.visibility(),
             &created_image_url,
+            &image_reference_url,
             upload_image.size() as u64,
             &upload_image.format(),
         );
@@ -222,10 +231,12 @@ mod tests {
         let pg = Arc::new(PostgresDatabase::connect(db_url).await.unwrap());
         let mock_image_repository = Arc::new(MockImageRepository {});
         let mock_photo_policy_enforcer = Arc::new(MockPhotoPolicyEnforcer {});
+        let mock_image_reference_url_builder = Arc::new(ImageReferenceUrlBuilder::new(&Url::parse("http://localhost:8080/images/").unwrap()));
         let service = PhotoServiceImpl {
             photo_repository: pg.clone(),
             image_repository: mock_image_repository.clone(),
             photo_policy_enforcer: mock_photo_policy_enforcer,
+            image_reference_url_builder: mock_image_reference_url_builder
         };
         let authenticated_user = AuthenticatedUser::new(
             &Uuid::new_v4(),

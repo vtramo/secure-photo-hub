@@ -7,7 +7,7 @@ use crate::models::entity::{ImageReferenceEntity, VisibilityEntity};
 use crate::models::entity::photo::{PhotoEntity, PhotoImageReferenceEntity, PhotoNoImageReferenceEntity};
 use crate::models::service::image::ImageReference;
 use crate::models::service::photo::{CreatePhoto, UpdatePhoto};
-use crate::repository::{build_image_reference_url, NULL, PostgresDatabase};
+use crate::repository::{NULL, PostgresDatabase};
 
 #[async_trait::async_trait]
 pub trait PhotoRepository: Clone + Send + Sync + 'static {
@@ -159,7 +159,7 @@ impl PostgresDatabase {
             image: ImageReferenceEntity {
                 id: image_entity.id,
                 owner_user_id: image_entity.owner_user_id,
-                url: build_image_reference_url(&image_entity.id).to_string(),
+                url: create_photo.image_reference_url().to_string(),
                 size: image_entity.size,
                 visibility,
                 format: image_entity.format.clone(),
@@ -200,6 +200,7 @@ mod tests {
             &image_id,
             &Some(album_id),
             &Visibility::Private,
+            &image_url,
             &image_url,
             1024,
             &ImageFormat::Png,
@@ -244,6 +245,7 @@ mod tests {
             &Some(album_id),
             &Visibility::Private,
             &image_url,
+            &image_url,
             1024,
             &ImageFormat::Png,
         );
@@ -276,6 +278,7 @@ mod tests {
             &image_id,
             &Some(album_id),
             &Visibility::Private,
+            &image_url,
             &image_url,
             1024,
             &ImageFormat::Png,

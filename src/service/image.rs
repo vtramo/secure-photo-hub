@@ -1,6 +1,7 @@
 use std::io::Cursor;
 use std::sync::Arc;
 use image::{ImageFormat, ImageReader};
+use url::Url;
 use uuid::Uuid;
 use crate::models::service::image::{ImageTransformOptions, Image, ImageTransformation};
 use crate::repository::image_reference_repository::ImageReferenceRepository;
@@ -83,4 +84,22 @@ impl<IR, IU> ImageService for ImageServiceImpl<IR, IU>
         
         Ok(Some(Self::transform_image(image, image_transform_options)?))
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct ImageReferenceUrlBuilder {
+    image_by_id_endpoint_url: Url
+}
+
+impl ImageReferenceUrlBuilder {
+    pub fn new(image_by_id_endpoint_url: &Url) -> Self {
+        Self { image_by_id_endpoint_url: image_by_id_endpoint_url.clone() }
+    }
+    
+    pub fn build(&self, image_reference_id: &Uuid) -> Url {
+        self.image_by_id_endpoint_url
+            .clone()
+            .join(&image_reference_id.to_string())
+            .unwrap()
+    } 
 }

@@ -115,6 +115,7 @@ pub struct CreatePhoto {
     album_id: Option<Uuid>,
     visibility: Visibility,
     image_url: url::Url,
+    image_reference_url: url::Url,
     image_size: u64,
     image_format: ImageFormat,
 }
@@ -144,6 +145,9 @@ impl CreatePhoto {
     pub fn image_url(&self) -> &url::Url {
         &self.image_url
     }
+    pub fn image_reference_url(&self) -> &url::Url {
+        &self.image_reference_url
+    }
     pub fn image_size(&self) -> u64 {
         self.image_size
     }
@@ -164,6 +168,7 @@ impl CreatePhoto {
         album_id: &Option<Uuid>,
         visibility: &Visibility,
         url: &url::Url,
+        image_reference_url: &url::Url,
         size: u64,
         format: &ImageFormat,
     ) -> Self {
@@ -177,6 +182,7 @@ impl CreatePhoto {
             album_id: album_id.clone(),
             visibility: visibility.clone(),
             image_url: url.clone(),
+            image_reference_url: image_reference_url.clone(),
             image_size: size,
             image_format: format.clone(),
         }

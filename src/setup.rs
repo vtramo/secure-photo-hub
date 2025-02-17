@@ -2,28 +2,28 @@ use std::env;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::sync::LazyLock;
-use actix_web::dev::Server;
 
+use actix_web::dev::Server;
 use anyhow::Context;
+use url::Url;
 use yaml_rust2::{Yaml, YamlLoader};
 
 use s3::setup_aws_s3_config;
-
 pub use setup::{
-    oidc::OidcConfig, 
-    redis::RedisConfig, 
-    database::DatabaseConfig, 
-    http::PhotoRoutesState, 
-    http::AlbumRoutesState, 
-    http::ImageRoutesState, 
+    database::DatabaseConfig,
+    http::AlbumRoutesState,
+    http::ImageRoutesState,
+    http::PhotoRoutesState,
+    oidc::OidcConfig,
+    redis::RedisConfig,
     s3::AwsS3Config};
 
 use crate::setup;
-use crate::setup::database::{setup_database_config};
+use crate::setup::database::setup_database_config;
 use crate::setup::http::create_http_server;
 use crate::setup::logging::init_logging;
-use crate::setup::oidc::{setup_oidc_config};
-use crate::setup::redis::{setup_redis_config};
+use crate::setup::oidc::setup_oidc_config;
+use crate::setup::redis::setup_redis_config;
 
 mod database;
 mod http;
@@ -38,6 +38,7 @@ const SECRETS_LOCATION_ENV_VAR: &'static str = "SECRETS_LOCATION";
 const SERVER_PORT_ENV_VAR: &'static str = "SERVER_PORT";
 const SERVER_FIELD: &'static str = "server";
 const PORT_FIELD: &'static str = "port";
+const IMAGE_REFERENCE_ENDPOINT_URL: &'static str = "image-reference-endpoint-url";
 const APPLICATION_PROPERTIES: LazyLock<&Path> =
     LazyLock::new(|| Path::new("resources/application-properties.yaml"));
 const SECRETS: LazyLock<&Path> = LazyLock::new(|| Path::new("resources/application-secrets.yaml"));
@@ -49,6 +50,7 @@ pub struct Config {
     database_config: DatabaseConfig,
     aws_s3_config: AwsS3Config,
     server_port: u16,
+    image_reference_endpoint_url: Url
 }
 
 impl Config {
@@ -92,6 +94,7 @@ async fn setup() -> anyhow::Result<Config> {
     let aws_s3_config = setup_aws_s3_config(&root_secrets).await?;
     let server_port = get_server_port(&root_application_properties);
     let database_config = setup_database_config(&application_properties_path, &secrets_path)?;
+    let image_reference_endpoint_url = extract_image_reference_endpoint_url(&root_application_properties)?;
 
     Ok(Config {
         oidc_config,
@@ -99,7 +102,15 @@ async fn setup() -> anyhow::Result<Config> {
         database_config,
         aws_s3_config,
         server_port,
+        image_reference_endpoint_url,
     })
+}
+
+fn extract_image_reference_endpoint_url(application_properties: &Yaml) -> anyhow::Result<Url> {
+    application_properties[IMAGE_REFERENCE_ENDPOINT_URL]
+        .as_str()
+        .context(format!("Missing {} property!", IMAGE_REFERENCE_ENDPOINT_URL))
+        .and_then(|url| Url::parse(url).context(format!("Invalid URL format for {}", IMAGE_REFERENCE_ENDPOINT_URL)))
 }
 
 fn get_server_port(application_properties: &Yaml) -> u16 {

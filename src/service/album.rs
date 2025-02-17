@@ -6,6 +6,7 @@ use crate::repository::album_repository::AlbumRepository;
 use crate::security::auth::user::AuthenticatedUser;
 use crate::security::authz::AlbumPolicyEnforcer;
 use crate::service::AlbumService;
+use crate::service::image::ImageReferenceUrlBuilder;
 use crate::service::image_storage::ImageStorage;
 
 #[derive(Debug, Clone)]
@@ -18,6 +19,7 @@ pub struct AlbumServiceImpl<R, I, P>
     album_repository: Arc<R>,
     image_repository: Arc<I>,
     album_policy_enforcer: Arc<P>,
+    image_reference_url_builder: Arc<ImageReferenceUrlBuilder>,
 }
 
 impl<R, I, P> AlbumServiceImpl<R, I, P> 
@@ -29,8 +31,13 @@ impl<R, I, P> AlbumServiceImpl<R, I, P>
     pub fn album_repository(&self) -> Arc<R> {
         self.album_repository.clone()
     }
-    pub fn new(album_repository: Arc<R>, image_repository: Arc<I>, album_policy_enforcer: Arc<P>) -> Self {
-        Self { album_repository, image_repository, album_policy_enforcer }
+    pub fn new(
+        album_repository: Arc<R>, 
+        image_repository: Arc<I>, 
+        album_policy_enforcer: Arc<P>,
+        image_reference_url_builder: Arc<ImageReferenceUrlBuilder>,
+    ) -> Self {
+        Self { album_repository, image_repository, album_policy_enforcer, image_reference_url_builder }
     }
 }
 
@@ -83,17 +90,19 @@ impl<R, I, P> AlbumService for AlbumServiceImpl<R, I, P>
         }
         
         let upload_cover_image = create_album_with_cover.upload_image();
-        let (created_image_id, created_image_url) = self.image_repository.upload_image(upload_cover_image).await?;
+        let (created_cover_image_id, created_cover_image_url) = self.image_repository.upload_image(upload_cover_image).await?;
+        let cover_image_reference_url = self.image_reference_url_builder.build(&created_cover_image_id);
         
         let create_album = CreateAlbum::new(
-              create_album_with_cover.title().to_string(),
-              create_album_with_cover.description().to_string(),
-              create_album_with_cover.visibility().clone(),
-              authenticated_user.id().clone(),
-              created_image_id,
-              created_image_url,
-              upload_cover_image.size() as u64,
-              upload_cover_image.format(),
+            create_album_with_cover.title().to_string(),
+            create_album_with_cover.description().to_string(),
+            create_album_with_cover.visibility().clone(),
+            authenticated_user.id().clone(),
+            created_cover_image_id,
+            created_cover_image_url,
+            cover_image_reference_url,
+            upload_cover_image.size() as u64,
+            upload_cover_image.format(),
         );
         
         self.album_repository()
