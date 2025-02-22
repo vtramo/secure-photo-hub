@@ -1,6 +1,8 @@
 {
   "id": "287dc33e-639a-4fd1-a06f-9326e54a514b",
   "realm": "secure-photo-hub",
+  "displayName": "",
+  "displayNameHtml": "",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,
@@ -27,7 +29,7 @@
   "oauth2DevicePollingInterval": 5,
   "enabled": true,
   "sslRequired": "external",
-  "registrationAllowed": false,
+  "registrationAllowed": true,
   "registrationEmailAsUsername": false,
   "rememberMe": false,
   "verifyEmail": false,
@@ -35,7 +37,7 @@
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": false,
   "editUsernameAllowed": false,
-  "bruteForceProtected": false,
+  "bruteForceProtected": true,
   "permanentLockout": false,
   "maxTemporaryLockouts": 0,
   "bruteForceStrategy": "MULTIPLE",
@@ -44,7 +46,7 @@
   "waitIncrementSeconds": 60,
   "quickLoginCheckMilliSeconds": 1000,
   "maxDeltaTimeSeconds": 43200,
-  "failureFactor": 30,
+  "failureFactor": 5,
   "roles": {
     "realm": [
       {
@@ -780,10 +782,10 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "http://localhost:8085/openid_redirect_uri_endpoint"
+        "http://localhost:8087/openid_redirect_uri_endpoint"
       ],
       "webOrigins": [
-        "http://localhost:8085"
+        "http://localhost:8087"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -2006,7 +2008,7 @@
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   },
   "smtpServer": {},
-  "eventsEnabled": false,
+  "eventsEnabled": true,
   "eventsListeners": [
     "jboss-logging"
   ],
@@ -2211,6 +2213,18 @@
             "oidc-usermodel-property-mapper",
             "saml-user-attribute-mapper",
             "oidc-full-name-mapper"
+          ]
+        }
+      }
+    ],
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "id": "f33a2e5b-6900-48c9-8bb2-30daf8df51d3",
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}],\"unmanagedAttributePolicy\":\"ENABLED\"}"
           ]
         }
       }
@@ -2600,6 +2614,125 @@
       ]
     },
     {
+      "id": "d727ce4e-6621-464a-bde0-7fc699ccc78f",
+      "alias": "browser_mfa",
+      "description": "Browser based mfa authentication",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-spnego",
+          "authenticatorFlow": false,
+          "requirement": "DISABLED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 25,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 26,
+          "autheticatorFlow": true,
+          "flowAlias": "browser_mfa Organization",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "REQUIRED",
+          "priority": 30,
+          "autheticatorFlow": true,
+          "flowAlias": "browser_mfa forms",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "e021be3b-ef87-4626-90e6-8e50f1a39dee",
+      "alias": "browser_mfa Browser - Conditional Organization",
+      "description": "Flow to determine if the organization identity-first login is to be used",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "organization",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "43cc734f-5450-4947-a9e0-3d1d8cae0760",
+      "alias": "browser_mfa Organization",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 10,
+          "autheticatorFlow": true,
+          "flowAlias": "browser_mfa Browser - Conditional Organization",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "0c6e89b6-0935-4b8b-967e-80324f3f45e5",
+      "alias": "browser_mfa forms",
+      "description": "Username, password, otp and other auth forms.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 11,
+          "autheticatorFlow": true,
+          "flowAlias": "mfa",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
       "id": "ffba4682-4db5-443c-8508-02992fcb13c3",
       "alias": "clients",
       "description": "Base authentication for clients",
@@ -2755,6 +2888,33 @@
       ]
     },
     {
+      "id": "f3122fc4-d220-4c8f-b960-a24fd21da229",
+      "alias": "mfa",
+      "description": "",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticatorConfig": "totp-enabled",
+          "authenticator": "conditional-user-attribute",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 0,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 1,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
       "id": "e6459a27-5e4b-4971-a849-aad18ccc2d23",
       "alias": "registration",
       "description": "Registration flow",
@@ -2890,6 +3050,14 @@
       "config": {
         "update.profile.on.first.login": "missing"
       }
+    },
+    {
+      "id": "809f5d96-8814-462a-b5e4-62c8a447af37",
+      "alias": "totp-enabled",
+      "config": {
+        "attribute_expected_value": "true",
+        "attribute_name": "totp-enabled"
+      }
     }
   ],
   "requiredActions": [
@@ -2993,7 +3161,7 @@
       "config": {}
     }
   ],
-  "browserFlow": "browser",
+  "browserFlow": "browser_mfa",
   "registrationFlow": "registration",
   "directGrantFlow": "direct grant",
   "resetCredentialsFlow": "reset credentials",
@@ -3013,7 +3181,8 @@
     "oauth2DeviceCodeLifespan": "600",
     "parRequestUriLifespan": "60",
     "clientSessionMaxLifespan": "0",
-    "organizationsEnabled": "false"
+    "organizationsEnabled": "false",
+    "adminEventsExpiration": "604800"
   },
   "keycloakVersion": "26.0.5",
   "userManagedAccessAllowed": false,

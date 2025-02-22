@@ -13,6 +13,7 @@ data:
       host: 127.0.0.1
       port: 5432
       name: secure_photo_hub_db
+    image-reference-endpoint-url: http://localhost:8085/images/
 kind: ConfigMap
 metadata:
   name: secure-photo-hub-configmap
