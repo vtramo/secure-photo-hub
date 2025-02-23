@@ -104,7 +104,7 @@ pub async fn create_http_server(config: Config) -> anyhow::Result<Server> {
             .wrap(
                 SessionMiddleware::builder(store.clone(), Key::from(&[0; 64]))
                     .cookie_http_only(true)
-                    .cookie_secure(false)
+                    .cookie_secure(true)
                     .cookie_path("/".to_string())
                     .cookie_same_site(SameSite::Lax)
                     .session_lifecycle(BrowserSession::default())
