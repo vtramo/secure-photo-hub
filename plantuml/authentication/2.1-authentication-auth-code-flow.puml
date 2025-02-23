@@ -1,12 +1,42 @@
 @startuml
-title OAuth2 Authorization Code Flow
+title OAuth2 Authorization Code Flow (Best Case)
 hide footbox
 
 participant Browser
 participant "Secure Photo Hub" as SecurePhotoHub
-participant HttpRequest
 participant "Redis Session Middleware" as RedisSessionMiddleware
 participant Keycloak
 database Redis
 
+Browser -> Keycloak : Authorization Code Request
+Browser <-- Keycloak : Login Page
+Browser -> Keycloak : Inserisci credenziali
+Browser <-- Keycloak : Credenziali valide, redirect to Secure Photo Hub (include Authorization Code e State)
+Browser -> SecurePhotoHub : GET /openid_redirection_endpoint?state=...&code=...
+SecurePhotoHub -> RedisSessionMiddleware : estrai stato usando valore <b>state</b> ricevuto
+RedisSessionMiddleware -> Redis : get(state)
+RedisSessionMiddleware <-- Redis : (nonce, code_verifier)
+SecurePhotoHub <-- RedisSessionMiddleware : (nonce, code_verifier)
+SecurePhotoHub -> Keycloak : POST /realms/secure-photo-hub/protocol/openid-connect/token? \n\
+     grant_type=code& \n\
+     code={{code}}& \n\
+     code_verifier={{code_verifier}}& \n\
+     client_id=secure-photo-hub-rest-api& \n\
+     client_secret=...& \n\
+     redirect_uri=/openid_redirection_endpoint
+SecurePhotoHub <-- Keycloak : HTTP 200 OK \n\
+{ \n\
+  "access_token": ..., \n\
+  "refresh_token": ..., \n\
+  "id_token": ..., \n\
+  ... \n\
+}
+SecurePhotoHub -> SecurePhotoHub : validate_tokens(tokens)
+create AuthenticatedUser
+SecurePhotoHub -> AuthenticatedUser : crea AuthenticatedUser a partire dall'id token
+SecurePhotoHub -> RedisSessionMiddleware : salva sessione (tokens e AuthenticatedUser)
+RedisSessionMiddleware -> Redis
+RedisSessionMiddleware <-- Redis
+SecurePhotoHub <-- RedisSessionMiddleware
+Browser <-- SecurePhotoHub : redirect to home (/) con secure http-only cookie settato
 @enduml
