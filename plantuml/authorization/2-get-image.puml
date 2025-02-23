@@ -1,0 +1,19 @@
+@startuml
+hide footbox
+title Download Image (best case & already authenticated)
+
+participant "HTTP Client" as Client
+participant "Secure Photo Hub" as SecurePhotoHub
+participant "Keycloak" as Keycloak
+database Postgres
+database "AWS S3" as S3
+
+Client -> SecurePhotoHub : GET /images/{{id}}
+SecurePhotoHub -> Keycloak : Can view image with id {{id}}?
+SecurePhotoHub <-- Keycloak : Yes
+SecurePhotoHub -> Postgres : Get image reference with id {{id}} (S3 URL)
+SecurePhotoHub <-- Postgres : ImageReference S3 URL
+SecurePhotoHub -> S3 : Download image
+SecurePhotoHub <-- S3 : Image
+SecurePhotoHub --> Client : Image
+@enduml

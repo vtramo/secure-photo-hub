@@ -1,0 +1,28 @@
+@startuml
+hide footbox
+title Create Photo (best case & already authenticated)
+
+participant "HTTP Client" as Client
+participant "Secure Photo Hub" as SecurePhotoHub
+participant "Keycloak" as Keycloak
+database Postgres
+database "AWS S3" as S3
+
+Client -> SecurePhotoHub : POST /photos\n\
+(binary data & metadata json)
+SecurePhotoHub -> Keycloak : Can create photo?
+SecurePhotoHub <-- Keycloak : Yes
+SecurePhotoHub -> S3 : Save image
+SecurePhotoHub <-- S3 : S3 URL image
+SecurePhotoHub -> Postgres : Save image reference (S3 URL)
+SecurePhotoHub <-- Postgres
+SecurePhotoHub -> Postgres : Save photo metadata
+SecurePhotoHub <-- Postgres
+SecurePhotoHub -> SecurePhotoHub : rewrite S3 URL image
+SecurePhotoHub --> Client : Return the created photo\n\
+along with the updated S3 URL.
+note right: The S3 URL is not returned to the client as\n\
+direct access to S3 is not allowed for security reasons.\n\
+The image is accessible via the endpoint /images/{id},\n\
+and the returned URL corresponds to this endpoint.
+@enduml
